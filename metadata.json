@@ -1,0 +1,6 @@
+{
+  "name": "Quản Lý Bảng Lương",
+  "description": "Hệ thống quản lý nhân sự, chấm công HC/OT, tính lương IM và báo cáo tổng hợp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
