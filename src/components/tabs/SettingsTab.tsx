@@ -3,6 +3,7 @@ import { Settings, Save, Shield, Percent, DollarSign, Award, Receipt } from 'luc
 import { usePayroll } from '../../context/PayrollContext';
 import { Position, PositionAllowanceConfig, SalaryConfig } from '../../types/payroll';
 import { formatVND, calculatePayslip } from '../../utils/payrollCalculations';
+import { FormattedNumberInput } from '../ui/FormattedNumberInput';
 
 export const SettingsTab: React.FC = () => {
   const {
@@ -163,23 +164,18 @@ export const SettingsTab: React.FC = () => {
           100% logic/field, chỉ đổi cách trình bày. */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700 overflow-hidden">
         {/* Section 1: Header + nút lưu tất cả */}
-        <div className="p-4 md:p-5 bg-slate-50/70 dark:bg-slate-900/40 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Settings className="w-5 h-5 text-blue-600" />
-              Cấu Hình Tham Số Tính Lương, Phụ Cấp & Khấu Trừ
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Điều chỉnh hệ số tăng ca, tỷ lệ bảo hiểm xã hội bắt buộc và định mức phụ cấp từng vị trí
-            </p>
-          </div>
+        <div className="px-4 py-2.5 bg-slate-50/70 dark:bg-slate-900/40 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Settings className="w-4 h-4 text-blue-600" />
+            Cấu Hình Tham Số Tính Lương, Phụ Cấp & Khấu Trừ
+          </h2>
 
           {activeRole !== 'User' && (
             <button
               type="submit"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow-sm transition-all cursor-pointer"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-3.5 h-3.5" />
               <span>Lưu tất cả cấu hình</span>
             </button>
           )}
@@ -187,48 +183,38 @@ export const SettingsTab: React.FC = () => {
 
         {/* Section 2: Nhập tay bổ sung theo nhân viên/tháng — EPCC (single-save-button):
             bỏ tiêu đề riêng theo yêu cầu, gộp phẳng vào ngay dưới header chung của card. */}
-        <div className="p-4 md:p-5 space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="px-4 py-2 space-y-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-xs">
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-              Nhân viên
-            </label>
+            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">Nhân viên</label>
             <select
               value={manualEmpId}
               onChange={(e) => setManualEmpId(e.target.value)}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
             >
               {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.id} - {emp.fullName}
-                </option>
+                <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-              Tháng
-            </label>
+            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">Tháng</label>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <option key={m} value={m}>Tháng {m}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-              Năm
-            </label>
+            <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">Năm</label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
             >
               {[selectedYear - 1, selectedYear, selectedYear + 1].map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -237,396 +223,186 @@ export const SettingsTab: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5 text-xs">
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Trợ cấp phụ nữ (giờ)
-            </label>
-            <input
-              type="number"
-              step="0.5"
-              value={manualFemaleHours}
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Trợ cấp phụ nữ (giờ)</label>
+            <input type="number" step="0.5" value={manualFemaleHours}
               onChange={(e) => setManualFemaleHours(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-            />
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
           </div>
-
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Phép tồn chuyển
-            </label>
-            <input
-              type="number"
-              step="1"
-              value={manualTransferredLeave}
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Phép tồn chuyển</label>
+            <input type="number" step="1" value={manualTransferredLeave}
               onChange={(e) => setManualTransferredLeave(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-            />
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
           </div>
-
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Thuế TNCN (để trống = tự tính)
-            </label>
-            <div className="flex items-center gap-1.5">
-              <input
-                type="number"
-                step="10000"
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Thuế TNCN (để trống = tự tính)</label>
+            <div className="flex items-center gap-1">
+              <input type="number" step="10000"
                 placeholder={manualPayslip ? formatVND(manualPayslip.pitAutoCalculated) : ''}
                 value={manualTax}
                 onChange={(e) => setManualTax(e.target.value)}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
+                className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
               {manualAttendanceRecord?.manualPersonalTax != null && (
-                <button
-                  type="button"
-                  onClick={handleResetTaxToAuto}
-                  title="Xóa số nhập tay, quay lại dùng công thức tự tính lũy tiến"
-                  className="shrink-0 px-2 py-1 text-[10px] font-semibold text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40"
-                >
+                <button type="button" onClick={handleResetTaxToAuto}
+                  className="shrink-0 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40">
                   Tự động
                 </button>
               )}
             </div>
           </div>
-
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Truy thu BHYT
-            </label>
-            <input
-              type="number"
-              step="10000"
-              value={manualArrears}
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Truy thu BHYT</label>
+            <input type="number" step="10000" value={manualArrears}
               onChange={(e) => setManualArrears(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-            />
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
           </div>
-
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Trừ khác
-            </label>
-            <input
-              type="number"
-              step="10000"
-              value={manualOtherDeduction}
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Trừ khác</label>
+            <input type="number" step="10000" value={manualOtherDeduction}
               onChange={(e) => setManualOtherDeduction(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-            />
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
           </div>
-
           <div>
-            <label className="block text-slate-600 dark:text-slate-400 mb-1 font-medium">
-              Số ngày nghỉ không phép
-            </label>
-            <input
-              type="number"
-              step="1"
-              min={0}
-              value={manualUnauthorizedAbsence}
+            <label className="block text-slate-600 dark:text-slate-400 mb-0.5 font-medium">Số ngày nghỉ không phép</label>
+            <input type="number" step="1" min={0} value={manualUnauthorizedAbsence}
               onChange={(e) => setManualUnauthorizedAbsence(Number(e.target.value))}
-              className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-            />
+              className="w-full px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold" />
             {manualUnauthorizedAbsence > 0 && (
-              <p className="mt-1 text-[10px] text-rose-600 dark:text-rose-400">
-                &gt;0 → Thưởng chuyên cần sẽ bị cắt về 0đ
-              </p>
+              <p className="mt-0.5 text-[10px] text-rose-600 dark:text-rose-400">&gt;0 → Thưởng chuyên cần bị cắt</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Section 3: Tham số hệ thống (2 cột, chia bằng đường kẻ dọc thay vì 2 card riêng) */}
-      <div className="p-4 md:p-5 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
-        {/* Basic Parameters */}
-        <div className="space-y-3 md:pr-8">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-            <Percent className="w-4 h-4 text-blue-600" />
-            Định Mức Công Chuẩn & Hệ Số Tăng Ca (OT)
+      {/* Section 3: Tham số hệ thống — 2 cột chia đường kẻ dọc */}
+      <div className="px-4 py-2 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
+        {/* Left: Định mức công chuẩn & hệ số OT — dạng list dọc compact */}
+        <div className="space-y-0.5 md:pr-6">
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <Percent className="w-3.5 h-3.5 text-blue-600" />
+            Định Mức Công Chuẩn &amp; Hệ Số Tăng Ca (OT)
           </h3>
-
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Số ngày công chuẩn/tháng
-              </label>
+          {([
+            { label: 'Số ngày công chuẩn/tháng', value: config.standardWorkDaysPerMonth, step: 1,
+              onChange: (v: number) => setConfig({ ...config, standardWorkDaysPerMonth: v }) },
+            { label: 'Số giờ làm chuẩn/ngày', value: config.standardHoursPerDay, step: 1,
+              onChange: (v: number) => setConfig({ ...config, standardHoursPerDay: v }) },
+            { label: 'Hệ số OT ngày thường (%)', value: config.otRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, otRate: v / 100 }) },
+            { label: 'Hệ số ca đêm (%)', value: config.nightShiftRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, nightShiftRate: v / 100 }) },
+            { label: 'Hệ số Chủ Nhật (%)', value: config.sundayRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, sundayRate: v / 100 }) },
+            { label: 'Hệ số Ngày Lễ (%)', value: config.holidayRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, holidayRate: v / 100 }) },
+            { label: 'Trợ cấp phụ nữ (%)', value: config.femaleSupportRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, femaleSupportRate: v / 100 }) },
+            { label: 'Tăng ca đêm ngày thường (%)', value: (config.nightOt50Rate ?? 0.5) * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, nightOt50Rate: v / 100 }) },
+            { label: 'Tăng ca đêm thông ca (%)', value: (config.nightOt60Rate ?? 0.6) * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, nightOt60Rate: v / 100 }) },
+            { label: 'Tăng ca 70% night (%)', value: (config.ot70Rate ?? 0.7) * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, ot70Rate: v / 100 }) },
+            { label: 'Tăng ca đêm ngày lễ (%)', value: (config.holidayNightOt90Rate ?? 0.9) * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, holidayNightOt90Rate: v / 100 }) },
+          ] as { label: string; value: number; step: number; onChange: (v: number) => void }[]).map(({ label, value, step, onChange }) => (
+            <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+              <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
               <input
                 type="number"
-                value={config.standardWorkDaysPerMonth}
-                onChange={(e) => setConfig({ ...config, standardWorkDaysPerMonth: Number(e.target.value) })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                step={step}
+                value={value}
+                onChange={(e) => onChange(Number(e.target.value))}
+                className="w-14 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
               />
             </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Số giờ làm chuẩn/ngày
-              </label>
-              <input
-                type="number"
-                value={config.standardHoursPerDay}
-                onChange={(e) => setConfig({ ...config, standardHoursPerDay: Number(e.target.value) })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Hệ số OT ngày thường (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.otRate * 100}
-                onChange={(e) => setConfig({ ...config, otRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Hệ số ca đêm (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.nightShiftRate * 100}
-                onChange={(e) => setConfig({ ...config, nightShiftRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Hệ số Chủ Nhật (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.sundayRate * 100}
-                onChange={(e) => setConfig({ ...config, sundayRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Hệ số Ngày Lễ (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.holidayRate * 100}
-                onChange={(e) => setConfig({ ...config, holidayRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Trợ cấp phụ nữ (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.femaleSupportRate * 100}
-                onChange={(e) => setConfig({ ...config, femaleSupportRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Tăng ca đêm ngày thường (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={(config.nightOt50Rate ?? 0.5) * 100}
-                onChange={(e) => setConfig({ ...config, nightOt50Rate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Tăng ca đêm thông ca (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={(config.nightOt60Rate ?? 0.6) * 100}
-                onChange={(e) => setConfig({ ...config, nightOt60Rate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Tăng ca (70% night) (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={(config.ot70Rate ?? 0.7) * 100}
-                onChange={(e) => setConfig({ ...config, ot70Rate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Tăng ca đêm ngày lễ (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={(config.holidayNightOt90Rate ?? 0.9) * 100}
-                onChange={(e) => setConfig({ ...config, holidayNightOt90Rate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
-              />
-            </div>
-          </div>
+          ))}
         </div>
 
-        {/* Statutory Deductions */}
-        {/* EPCC (merge-pit-config-into-insurance-card) — FIX ROOT CAUSE "card 'Cấu Hình Thuế
-            TNCN' đứng riêng, chiếm nguyên 1 hàng rộng dù chỉ có 4 ô": theo yêu cầu, đã kiểm
-            tra và xác nhận các field này (personalDeductionAmount, dependentDeductionAmount,
-            pitExemptHousingSupport, pitExemptLanguageSupport) THỰC SỰ được dùng trong
-            payrollCalculations.ts để tính Thuế TNCN (đã đối chiếu khớp E73-E76 file Excel gốc
-            ở các lần sửa trước) — nên KHÔNG xóa, chỉ gộp vào card "Tỷ Lệ Khấu Trừ Bảo Hiểm &
-            Đoàn Phí Bắt Buộc" bên cạnh cho gọn, thay vì để riêng 1 card đầy đủ chiều ngang. */}
-        <div className="space-y-3 md:pl-8 pt-4 md:pt-0">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-600" />
-            Tỷ Lệ Khấu Trừ Bảo Hiểm & Đoàn Phí Bắt Buộc
+        {/* Right: Bảo hiểm + Thuế TNCN — dạng list dọc compact */}
+        <div className="space-y-0.5 md:pl-6 pt-3 md:pt-0">
+          <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+            <Shield className="w-3.5 h-3.5 text-emerald-600" />
+            Tỷ Lệ Khấu Trừ Bảo Hiểm &amp; Đoàn Phí
           </h3>
 
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Trích BHXH người lao động (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.bhxhRate * 100}
-                onChange={(e) => setConfig({ ...config, bhxhRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
+          {([
+            { label: 'Trích BHXH người lao động (%)', value: config.bhxhRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, bhxhRate: v / 100 }) },
+            { label: 'Trích BHYT người lao động (%)', value: config.bhytRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, bhytRate: v / 100 }) },
+            { label: 'Trích BHTN người lao động (%)', value: config.bhtnRate * 100, step: 0.1,
+              onChange: (v: number) => setConfig({ ...config, bhtnRate: v / 100 }) },
+            { label: `Đoàn phí Công đoàn (VNĐ) = ${formatVND(config.unionFeeFlat)}`, value: config.unionFeeFlat, isVnd: true,
+              onChange: (v: number) => setConfig({ ...config, unionFeeFlat: v }) },
+          ] as { label: string; value: number; onChange: (v: number) => void; isVnd?: boolean }[]).map(({ label, value, onChange, isVnd }) => (
+            <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+              <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
+              {isVnd ? (
+                <FormattedNumberInput
+                  value={value}
+                  onChange={onChange}
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                />
+              ) : (
+                <input
+                  type="number"
+                  value={value}
+                  onChange={(e) => onChange(Number(e.target.value))}
+                  className="w-20 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                />
+              )}
             </div>
+          ))}
 
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Trích BHYT người lao động (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.bhytRate * 100}
-                onChange={(e) => setConfig({ ...config, bhytRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Trích BHTN người lao động (%)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={config.bhtnRate * 100}
-                onChange={(e) => setConfig({ ...config, bhtnRate: Number(e.target.value) / 100 })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                Đoàn phí Công đoàn cố định (VNĐ)
-              </label>
-              <input
-                type="number"
-                step="500"
-                value={config.unionFeeFlat}
-                onChange={(e) => setConfig({ ...config, unionFeeFlat: Number(e.target.value) })}
-                className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-              />
-              <span className="text-[11px] text-slate-500">
-                = {formatVND(config.unionFeeFlat)}
-              </span>
-            </div>
-          </div>
-
-          {/* EPCC (merge-pit-config-into-insurance-card) — phần Thuế TNCN chuyển từ card
-              riêng vào đây, tách bằng đường kẻ + tiêu đề phụ để vẫn rõ ràng 2 nhóm cấu hình. */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-700 space-y-3">
-            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <Receipt className="w-3.5 h-3.5 text-amber-600" />
-              Cấu Hình Thuế TNCN (Luật Thuế TNCN 2025, hiệu lực từ 01/7/2026)
+          {/* Thuế TNCN */}
+          <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700">
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+              <Receipt className="w-3 h-3 text-amber-600" />
+              Thuế TNCN (2025, hiệu lực 01/7/2026)
             </h4>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                  Giảm trừ bản thân (VNĐ)
-                </label>
-                <input
-                  type="number"
-                  step="100000"
-                  value={config.personalDeductionAmount ?? 15_500_000}
-                  onChange={(e) => setConfig({ ...config, personalDeductionAmount: Number(e.target.value) })}
-                  className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+            {([
+              { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
+                value: config.personalDeductionAmount ?? 15_500_000,
+                onChange: (v: number) => setConfig({ ...config, personalDeductionAmount: v }) },
+              { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 6_200_000)}`,
+                value: config.dependentDeductionAmount ?? 6_200_000,
+                onChange: (v: number) => setConfig({ ...config, dependentDeductionAmount: v }) },
+            ] as { label: string; value: number; onChange: (v: number) => void }[]).map(({ label, value, onChange }) => (
+              <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
+                <FormattedNumberInput
+                  value={value}
+                  onChange={onChange}
+                  className="w-28 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                 />
-                <span className="text-[11px] text-slate-500">
-                  = {formatVND(config.personalDeductionAmount ?? 15_500_000)}
-                </span>
               </div>
+            ))}
 
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-0.5">
-                  Giảm trừ người phụ thuộc (VNĐ/người)
-                </label>
-                <input
-                  type="number"
-                  step="100000"
-                  value={config.dependentDeductionAmount ?? 6_200_000}
-                  onChange={(e) => setConfig({ ...config, dependentDeductionAmount: Number(e.target.value) })}
-                  className="w-full px-3 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                />
-                <span className="text-[11px] text-slate-500">
-                  = {formatVND(config.dependentDeductionAmount ?? 6_200_000)}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   id="pitExemptHousing"
                   type="checkbox"
                   checked={config.pitExemptHousingSupport ?? false}
                   onChange={(e) => setConfig({ ...config, pitExemptHousingSupport: e.target.checked })}
-                  className="w-4 h-4 accent-blue-600"
+                  className="w-3.5 h-3.5 accent-blue-600"
                 />
-                <label htmlFor="pitExemptHousing" className="text-slate-700 dark:text-slate-300 font-semibold">
-                  Miễn thuế Hỗ trợ nhà ở
-                </label>
-              </div>
-
-              <div className="flex items-center gap-2">
+                Miễn thuế Hỗ trợ nhà ở
+              </label>
+              <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
                 <input
                   id="pitExemptLanguage"
                   type="checkbox"
                   checked={config.pitExemptLanguageSupport ?? false}
                   onChange={(e) => setConfig({ ...config, pitExemptLanguageSupport: e.target.checked })}
-                  className="w-4 h-4 accent-blue-600"
+                  className="w-3.5 h-3.5 accent-blue-600"
                 />
-                <label htmlFor="pitExemptLanguage" className="text-slate-700 dark:text-slate-300 font-semibold">
-                  Miễn thuế Hỗ trợ tiếng
-                </label>
-              </div>
+                Miễn thuế Hỗ trợ tiếng
+              </label>
             </div>
           </div>
         </div>
