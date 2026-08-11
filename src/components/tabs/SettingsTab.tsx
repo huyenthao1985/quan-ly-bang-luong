@@ -225,7 +225,7 @@ export const SettingsTab: React.FC = () => {
 
         {/* Section 3: Tham số hệ thống — 2 cột chia đường kẻ dọc */}
         <div className="px-4 py-2.5 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
-          {/* Left: Định mức công chuẩn & hệ số OT — dạng list dọc compact */}
+          {/* Left: Định mức công chuẩn & hệ số OT + Nhập tay bổ sung */}
           <div className="space-y-0.5 md:pr-6">
             <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
               <Percent className="w-3.5 h-3.5 text-blue-600" />
@@ -262,98 +262,12 @@ export const SettingsTab: React.FC = () => {
                   step={step}
                   value={value}
                   onChange={(e) => onChange(Number(e.target.value))}
-                  className="w-14 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                 />
               </div>
             ))}
-          </div>
 
-          {/* Right: Bảo hiểm + Thuế TNCN + Nhập tay bổ sung — dạng list dọc compact */}
-          <div className="space-y-0.5 md:pl-6 pt-3 md:pt-0">
-            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-              <Shield className="w-3.5 h-3.5 text-emerald-600" />
-              Tỷ Lệ Khấu Trừ Bảo Hiểm &amp; Đoàn Phí
-            </h3>
-
-            {([
-              { label: 'Trích BHXH người lao động (%)', value: config.bhxhRate * 100, step: 0.1,
-                onChange: (v: number) => setConfig({ ...config, bhxhRate: v / 100 }) },
-              { label: 'Trích BHYT người lao động (%)', value: config.bhytRate * 100, step: 0.1,
-                onChange: (v: number) => setConfig({ ...config, bhytRate: v / 100 }) },
-              { label: 'Trích BHTN người lao động (%)', value: config.bhtnRate * 100, step: 0.1,
-                onChange: (v: number) => setConfig({ ...config, bhtnRate: v / 100 }) },
-              { label: `Đoàn phí Công đoàn (VNĐ) = ${formatVND(config.unionFeeFlat)}`, value: config.unionFeeFlat, isVnd: true,
-                onChange: (v: number) => setConfig({ ...config, unionFeeFlat: v }) },
-            ] as { label: string; value: number; onChange: (v: number) => void; isVnd?: boolean }[]).map(({ label, value, onChange, isVnd }) => (
-              <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
-                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
-                {isVnd ? (
-                  <FormattedNumberInput
-                    value={value}
-                    onChange={onChange}
-                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                  />
-                ) : (
-                  <input
-                    type="number"
-                    value={value}
-                    onChange={(e) => onChange(Number(e.target.value))}
-                    className="w-20 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                  />
-                )}
-              </div>
-            ))}
-
-            {/* Thuế TNCN */}
-            <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Receipt className="w-3 h-3 text-amber-600" />
-                Thuế TNCN (2025, hiệu lực 01/7/2026)
-              </h4>
-
-              {([
-                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
-                  value: config.personalDeductionAmount ?? 15_500_000,
-                  onChange: (v: number) => setConfig({ ...config, personalDeductionAmount: v }) },
-                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 6_200_000)}`,
-                  value: config.dependentDeductionAmount ?? 6_200_000,
-                  onChange: (v: number) => setConfig({ ...config, dependentDeductionAmount: v }) },
-              ] as { label: string; value: number; onChange: (v: number) => void }[]).map(({ label, value, onChange }) => (
-                <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
-                  <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
-                  <FormattedNumberInput
-                    value={value}
-                    onChange={onChange}
-                    className="w-28 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                  />
-                </div>
-              ))}
-
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
-                  <input
-                    id="pitExemptHousing"
-                    type="checkbox"
-                    checked={config.pitExemptHousingSupport ?? false}
-                    onChange={(e) => setConfig({ ...config, pitExemptHousingSupport: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-blue-600"
-                  />
-                  Miễn thuế Hỗ trợ nhà ở
-                </label>
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
-                  <input
-                    id="pitExemptLanguage"
-                    type="checkbox"
-                    checked={config.pitExemptLanguageSupport ?? false}
-                    onChange={(e) => setConfig({ ...config, pitExemptLanguageSupport: e.target.checked })}
-                    className="w-3.5 h-3.5 accent-blue-600"
-                  />
-                  Miễn thuế Hỗ trợ tiếng
-                </label>
-              </div>
-            </div>
-
-            {/* Nhập tay bổ sung theo NV/Tháng */}
+            {/* Nhập tay bổ sung theo NV/Tháng — đã chuyển sang cột TRÁI theo yêu cầu */}
             <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-blue-600" />
@@ -367,7 +281,7 @@ export const SettingsTab: React.FC = () => {
                   step="0.5"
                   value={manualFemaleHours}
                   onChange={(e) => setManualFemaleHours(Number(e.target.value))}
-                  className="w-16 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                 />
               </div>
 
@@ -378,7 +292,7 @@ export const SettingsTab: React.FC = () => {
                   step="1"
                   value={manualTransferredLeave}
                   onChange={(e) => setManualTransferredLeave(Number(e.target.value))}
-                  className="w-16 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                 />
               </div>
 
@@ -430,12 +344,98 @@ export const SettingsTab: React.FC = () => {
                     min={0}
                     value={manualUnauthorizedAbsence}
                     onChange={(e) => setManualUnauthorizedAbsence(Number(e.target.value))}
-                    className="w-16 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                   />
                   {manualUnauthorizedAbsence > 0 && (
                     <span className="text-[9px] text-rose-600 dark:text-rose-400 font-semibold shrink-0">(Cắt chuyên cần)</span>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Bảo hiểm + Thuế TNCN — tất cả ô nhập liệu đồng nhất w-24 */}
+          <div className="space-y-0.5 md:pl-6 pt-3 md:pt-0">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+              <Shield className="w-3.5 h-3.5 text-emerald-600" />
+              Tỷ Lệ Khấu Trừ Bảo Hiểm &amp; Đoàn Phí
+            </h3>
+
+            {([
+              { label: 'Trích BHXH người lao động (%)', value: config.bhxhRate * 100, step: 0.1,
+                onChange: (v: number) => setConfig({ ...config, bhxhRate: v / 100 }) },
+              { label: 'Trích BHYT người lao động (%)', value: config.bhytRate * 100, step: 0.1,
+                onChange: (v: number) => setConfig({ ...config, bhytRate: v / 100 }) },
+              { label: 'Trích BHTN người lao động (%)', value: config.bhtnRate * 100, step: 0.1,
+                onChange: (v: number) => setConfig({ ...config, bhtnRate: v / 100 }) },
+              { label: `Đoàn phí Công đoàn (VNĐ) = ${formatVND(config.unionFeeFlat)}`, value: config.unionFeeFlat, isVnd: true,
+                onChange: (v: number) => setConfig({ ...config, unionFeeFlat: v }) },
+          ] as { label: string; value: number; onChange: (v: number) => void; isVnd?: boolean }[]).map(({ label, value, onChange, isVnd }) => (
+              <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
+                {isVnd ? (
+                  <FormattedNumberInput
+                    value={value}
+                    onChange={onChange}
+                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => onChange(Number(e.target.value))}
+                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  />
+                )}
+              </div>
+            ))}
+
+            {/* Thuế TNCN */}
+            <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                <Receipt className="w-3 h-3 text-amber-600" />
+                Thuế TNCN (2025, hiệu lực 01/7/2026)
+              </h4>
+
+              {([
+                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
+                  value: config.personalDeductionAmount ?? 15_500_000,
+                  onChange: (v: number) => setConfig({ ...config, personalDeductionAmount: v }) },
+                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 6_200_000)}`,
+                  value: config.dependentDeductionAmount ?? 6_200_000,
+                  onChange: (v: number) => setConfig({ ...config, dependentDeductionAmount: v }) },
+              ] as { label: string; value: number; onChange: (v: number) => void }[]).map(({ label, value, onChange }) => (
+                <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
+                  <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
+                  <FormattedNumberInput
+                    value={value}
+                    onChange={onChange}
+                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  />
+                </div>
+              ))}
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <input
+                    id="pitExemptHousing"
+                    type="checkbox"
+                    checked={config.pitExemptHousingSupport ?? false}
+                    onChange={(e) => setConfig({ ...config, pitExemptHousingSupport: e.target.checked })}
+                    className="w-3.5 h-3.5 accent-blue-600"
+                  />
+                  Miễn thuế Hỗ trợ nhà ở
+                </label>
+                <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <input
+                    id="pitExemptLanguage"
+                    type="checkbox"
+                    checked={config.pitExemptLanguageSupport ?? false}
+                    onChange={(e) => setConfig({ ...config, pitExemptLanguageSupport: e.target.checked })}
+                    className="w-3.5 h-3.5 accent-blue-600"
+                  />
+                  Miễn thuế Hỗ trợ tiếng
+                </label>
               </div>
             </div>
           </div>
