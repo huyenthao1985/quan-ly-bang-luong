@@ -6,7 +6,6 @@ import { DashboardTab } from './components/tabs/DashboardTab';
 import { EmployeeProfilesTab } from './components/tabs/EmployeeProfilesTab';
 import { AttendanceTab } from './components/tabs/AttendanceTab';
 import { PayrollTab } from './components/tabs/PayrollTab';
-import { IntegrationsTab } from './components/tabs/IntegrationsTab';
 import { ToastContainer } from './components/ToastContainer';
 
 const MainContent: React.FC = () => {
@@ -32,7 +31,6 @@ const MainContent: React.FC = () => {
       {activeTab === 'employees' && <EmployeeProfilesTab />}
       {activeTab === 'attendance' && <AttendanceTab />}
       {activeTab === 'settings' && <PayrollTab />}
-      {activeTab === 'integrations' && <IntegrationsTab />}
     </main>
   );
 };

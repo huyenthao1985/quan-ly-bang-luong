@@ -11,11 +11,10 @@ import { UserRole } from '../types/payroll';
 // domain nghiệp vụ nên vẫn hợp lý để App quản lý).
 
 const ITEMS: { id: string; index: string; label: string }[] = [
-  { id: 'dashboard',    index: '1', label: 'TỔNG QUAN' },
-  { id: 'employees',    index: '2', label: 'HỒ SƠ NHÂN VIÊN' },
-  { id: 'attendance',   index: '3', label: 'NHẬP ĐIỂM DANH' },
-  { id: 'settings',     index: '4', label: 'BẢNG LƯƠNG' },
-  { id: 'integrations', index: '5', label: 'KẾT NỐI CLOUD' },
+  { id: 'dashboard',  index: '1', label: 'TỔNG QUAN' },
+  { id: 'employees',  index: '2', label: 'HỒ SƠ NHÂN VIÊN' },
+  { id: 'attendance', index: '3', label: 'NHẬP ĐIỂM DANH' },
+  { id: 'settings',   index: '4', label: 'BẢNG LƯƠNG' },
 ];
 
 const ROLE_META: Record<UserRole, { label: string; icon: any }> = {

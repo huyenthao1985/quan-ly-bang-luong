@@ -6,7 +6,6 @@ import {
   FileSpreadsheet,
   BarChart3,
   LayoutDashboard,
-  Cloud,
 } from 'lucide-react';
 import { usePayroll } from '../context/PayrollContext';
 
@@ -20,7 +19,6 @@ export const TabNavigation: React.FC = () => {
     { id: 'settings', label: 'Cài Đặt', icon: Settings },
     { id: 'payslip', label: 'Bảng Lương IM', icon: FileSpreadsheet },
     { id: 'reports', label: 'Báo Cáo', icon: BarChart3 },
-    { id: 'integrations', label: 'Kết Nối Cloud', icon: Cloud },
   ];
 
   return (
