@@ -59,6 +59,33 @@ export const SettingsTab: React.FC = () => {
     ? calculatePayslip(manualEmp, manualAttendanceRecord, salaryConfig)
     : null;
 
+  // EPCC (allowance-table-filter-by-selected-employee) — theo yêu cầu: khi chọn nhân viên ở
+  // mục "Nhân viên" phía trên, hiển thị thêm vị trí/chức danh nhân viên đó đang thuộc nhóm
+  // nào, và bảng "Cấu hình phụ cấp theo vị trí" bên dưới CHỈ hiển thị đúng 1 dòng của vị trí
+  // đó (thay vì hiện cả 6 dòng / cả nhóm được phân quyền xem). Vẫn giữ nguyên ma trận phân
+  // quyền `visibleAllowancePositions` làm lớp chặn phía dưới: nếu vị trí đang chọn là vị trí
+  // mà người xem hiện tại (Leader/User) KHÔNG được phép xem, dòng đó sẽ không hiện ra.
+  // NOTE: giả định Employee có field `position: Position` (cùng type Position đã dùng cho
+  // viewerPosition/positionAllowances). Nếu field thực tế trong types/payroll.ts đặt tên khác
+  // (vd `role`, `chucVu`...), chỉ cần đổi `manualEmp?.position` bên dưới cho khớp.
+  //
+  // EPCC (position-selector-next-to-employee) — theo yêu cầu tiếp theo: thêm hẳn 1 cột chọn
+  // vị trí (dropdown) ngay cạnh Nhân viên, thay vì chỉ hiện chữ tĩnh. Mặc định khi đổi nhân
+  // viên sẽ tự đồng bộ về đúng vị trí của nhân viên đó, nhưng người dùng vẫn có thể tự chọn
+  // vị trí khác trong dropdown này để xem/sửa phụ cấp của vị trí bất kỳ (không cần đổi NV).
+  const [positionFilter, setPositionFilter] = useState<Position | ''>(manualEmp?.position || '');
+
+  useEffect(() => {
+    setPositionFilter(manualEmp?.position || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualEmpId]);
+
+  const selectedEmpPosition: Position | undefined = positionFilter || undefined;
+
+  const filteredAllowancePositions: Position[] = selectedEmpPosition
+    ? visibleAllowancePositions.filter((p) => p === selectedEmpPosition)
+    : visibleAllowancePositions;
+
   const [manualFemaleHours, setManualFemaleHours] = useState<number>(
     manualAttendanceRecord?.manualFemaleSupportHours ?? manualPayslip?.femaleSupportHours ?? 0
   );
@@ -233,39 +260,57 @@ export const SettingsTab: React.FC = () => {
           )}
         </div>
 
-        {/* Section 2: Chọn Nhân viên / Tháng / Năm */}
+        {/* Section 2: Chọn Nhân viên / Vị trí / Tháng / Năm — gộp thành 1 hàng gọn theo yêu cầu */}
         <div className="px-4 py-2 bg-slate-50/50 dark:bg-slate-900/30">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs items-center">
-            <div className="flex items-center gap-2">
-              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0">Nhân viên:</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs items-center">
+            <div className="flex items-center gap-1.5">
+              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Nhân viên:</label>
               <select
                 value={manualEmpId}
                 onChange={(e) => setManualEmpId(e.target.value)}
-                className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
               >
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName}</option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0">Tháng:</label>
+
+            {/* EPCC (position-selector-next-to-employee) — cột chọn vị trí ngay cạnh Nhân
+                viên: mặc định đồng bộ theo vị trí của NV đang chọn, nhưng có thể tự chọn
+                vị trí khác để lọc bảng phụ cấp bên dưới mà không cần đổi nhân viên. */}
+            <div className="flex items-center gap-1.5">
+              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Vị trí:</label>
+              <select
+                value={positionFilter}
+                onChange={(e) => setPositionFilter(e.target.value as Position | '')}
+                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded text-purple-700 dark:text-purple-300 font-bold cursor-pointer"
+              >
+                <option value="">Tất cả</option>
+                {positions.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Tháng:</label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                   <option key={m} value={m}>Tháng {m}</option>
                 ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0">Năm:</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Năm:</label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
               >
                 {[selectedYear - 1, selectedYear, selectedYear + 1].map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -507,7 +552,9 @@ export const SettingsTab: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
             <Award className="w-4 h-4 text-purple-600" />
-            Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh (S. Manager, Manager, Senior Staff, Leader, Staff, OP)
+            {selectedEmpPosition
+              ? <>Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh — Đang xem: {selectedEmpPosition}</>
+              : <>Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh (S. Manager, Manager, Senior Staff, Leader, Staff, OP)</>}
           </h3>
           {activeRole !== 'User' && (
             <button
@@ -530,6 +577,15 @@ export const SettingsTab: React.FC = () => {
           </div>
         )}
 
+        {/* EPCC (allowance-table-filter-by-selected-employee) — thêm 1 lớp lọc nữa theo
+            nhân viên đang chọn ở mục "Nhân viên" phía trên: dù được phân quyền xem nhiều vị
+            trí, bảng vẫn chỉ hiện đúng 1 dòng khớp vị trí của nhân viên đó. */}
+        {selectedEmpPosition && filteredAllowancePositions.length === 0 && (
+          <div className="mb-3 text-xs rounded-lg p-2 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300">
+            Nhân viên <strong>{manualEmp?.fullName}</strong> thuộc vị trí <strong>{selectedEmpPosition}</strong> nhưng bạn chưa được phân quyền xem phụ cấp của vị trí này.
+          </div>
+        )}
+
         <table className="w-full text-xs text-left border-collapse table-fixed">
           <thead className="bg-[#122842] text-white uppercase text-[11.5px] font-bold">
             <tr>
@@ -547,7 +603,7 @@ export const SettingsTab: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700 font-medium">
-            {visibleAllowancePositions.map((pos) => {
+            {filteredAllowancePositions.map((pos) => {
               const posConfig = config.positionAllowances[pos] || {
                 position: pos,
                 responsibilityAllowance: 0,

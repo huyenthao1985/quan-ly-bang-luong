@@ -273,12 +273,16 @@ export const POSITION_HIERARCHY: Position[] = [
 // key: vị trí người XEM | value: danh sách vị trí họ được phép xem bảng lương
 export type PayrollViewPermissions = Record<Position, Position[]>;
 
-// Mặc định: mỗi vị trí xem được chính mình + các vị trí thấp hơn (S. Manager thấy tất cả,
-// OP chỉ thấy chính OP). Admin có thể sửa lại tuỳ ý ở SettingsTab.
+// EPCC (payroll-view-permission-default-self-only) — theo yêu cầu: đổi mặc định từ "mỗi vị
+// trí thấy chính mình + các vị trí thấp hơn" (kiểu phân cấp) sang "mỗi vị trí CHỈ thấy chính
+// mình", riêng S. Manager mặc định thấy được cả 6 vị trí. Đây chỉ là GIÁ TRỊ MẶC ĐỊNH dùng
+// lần đầu (chưa có localStorage/Supabase) — sau đó chỉ thay đổi khi Admin tick thêm ô trong
+// ma trận ở SettingsTab và bấm "Lưu tất cả cấu hình" (updatePayrollViewPermissions), không tự
+// đổi theo logic nào khác.
 export function buildDefaultPayrollViewPermissions(): PayrollViewPermissions {
   const result = {} as PayrollViewPermissions;
-  POSITION_HIERARCHY.forEach((viewerPos, idx) => {
-    result[viewerPos] = POSITION_HIERARCHY.slice(idx);
+  POSITION_HIERARCHY.forEach((viewerPos) => {
+    result[viewerPos] = viewerPos === 'S. Manager' ? [...POSITION_HIERARCHY] : [viewerPos];
   });
   return result;
 }
