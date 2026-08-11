@@ -91,7 +91,7 @@ export function calculatePayslip(
   let holiday300Hours = 0;
   let leavePaidDays = 0;
   let leaveAnnualDays = 0;
-  let femaleSupportHours = attendanceRecord?.manualFemaleSupportHours ?? 0;
+  let femaleSupportHours = attendanceRecord?.manualFemaleSupportHours ?? (employee.isFemale ? 1.5 : 0);
 
   const nightOt50Hours = attendanceRecord?.manualNightOt50Hours ?? 0;
   const nightOt60Hours = attendanceRecord?.manualNightOt60Hours ?? 0;

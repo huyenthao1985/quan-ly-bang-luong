@@ -267,13 +267,8 @@ export const SettingsTab: React.FC = () => {
               </div>
             ))}
 
-            {/* Nhập tay chấm công & phép theo NV/Tháng */}
-            <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
-              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                Nhập Tay Chấm Công &amp; Phép (NV Đang Chọn)
-              </h4>
-
+            {/* Nhập tay chấm công & phép theo NV/Tháng — nối liền dưới hệ số OT, gỡ tiêu đề dư thừa theo yêu cầu */}
+            <div className="pt-1.5 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
               <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
                 <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Trợ cấp phụ nữ (giờ)</span>
                 <input
