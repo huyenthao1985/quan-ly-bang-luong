@@ -723,14 +723,14 @@ export const AttendanceTab: React.FC = () => {
               dòng tiêu đề chữ "Thông tin chấm công" theo yêu cầu người dùng
               (không còn header bar trên cùng của card nữa). */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="p-4 space-y-4">
+            <div className="p-2.5 space-y-2">
               {/* Nhân viên + Ngày */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-red-500 mb-1">● Nhân viên</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold text-red-500 mb-0.5">● Nhân viên</label>
                   <div className="relative">
                     <select value={selEmpId} onChange={e => setSelEmpId(e.target.value)}
-                      className={`w-full appearance-none pl-3 pr-7 py-2 text-xs border rounded-lg font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
+                      className={`w-full appearance-none pl-2.5 pr-6 py-1 text-xs border rounded-md font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
                         saveAttempted && !selEmpId
                           ? 'border-red-500 ring-2 ring-red-300 dark:ring-red-800 text-slate-400'
                           : selEmpId
@@ -742,23 +742,23 @@ export const AttendanceTab: React.FC = () => {
                         <option key={e.id} value={e.id}>[{e.id}] {e.fullName} – {e.department}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-2 top-2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                   </div>
                   {saveAttempted && !selEmpId && (
-                    <p className="mt-1 text-[10px] font-semibold text-red-500">⚠ Vui lòng chọn nhân viên trước khi lưu.</p>
+                    <p className="mt-0.5 text-[9px] font-semibold text-red-500">⚠ Vui lòng chọn nhân viên trước khi lưu.</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-red-500 mb-1">● Ngày</label>
+                  <label className="block text-[10px] font-bold text-red-500 mb-0.5">● Ngày</label>
                   <input type="date"
                     value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
                     onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
-                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                    className="w-full px-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                 </div>
               </div>
 
               {/* Trạng thái + Ca làm + Ngày đặc biệt */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <SelectRow
                   label="Trạng thái" required
                   value={status} onChange={v => setStatus(v as AttendanceStatus)}
@@ -779,44 +779,44 @@ export const AttendanceTab: React.FC = () => {
               </div>
 
               {/* Giờ bắt đầu / kết thúc */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
                 <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
               </div>
 
               {/* HC / OT ngoài giờ / Loại OT-Phụ cấp */}
-              <div className="grid grid-cols-3 gap-3 items-stretch">
+              <div className="grid grid-cols-3 gap-2 items-stretch">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">HC (h) – Hành chính</label>
-                  <div className="h-[42px] px-4 bg-green-50 dark:bg-green-950/30 border-2 border-green-400 dark:border-green-600 rounded-lg text-green-800 dark:text-green-300 font-bold text-sm flex items-center justify-between">
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">HC (h)</label>
+                  <div className="h-[32px] px-2.5 bg-green-50 dark:bg-green-950/30 border border-green-400 dark:border-green-600 rounded-md text-green-800 dark:text-green-300 font-bold text-xs flex items-center justify-between">
                     <span>{hcAuto.toFixed(1)}</span>
-                    <span className="text-[10px] font-normal text-green-600/70">(tối đa 8h)</span>
+                    <span className="text-[9px] font-normal text-green-600/70">(max 8h)</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-amber-600 mb-1">
-                    {shift === 'night' ? '🌙 Ca đêm (h)' : '⏰ OT ngoài giờ (h)'}
+                  <label className="block text-[10px] font-semibold text-amber-600 mb-0.5">
+                    {shift === 'night' ? '🌙 Ca đêm' : '⏰ OT (h)'}
                   </label>
-                  <div className={`h-[42px] px-4 rounded-lg font-bold text-sm flex items-center justify-between border-2 ${
+                  <div className={`h-[32px] px-2.5 rounded-md font-bold text-xs flex items-center justify-between border ${
                     otAuto > 0
                       ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300'
                       : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
                   }`}>
                     <span>{otAuto.toFixed(1)}</span>
                     {otAuto > 0 && (
-                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
-                        {shift === 'night' ? 'Ca đêm' : 'OT'}
+                      <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
+                        {shift === 'night' ? 'Đêm' : 'OT'}
                       </span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Loại OT / Phụ cấp</label>
+                  <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Loại OT / Phụ cấp</label>
                   <div className="relative">
                     <select
                       value={otType}
                       onChange={e => setOtType(e.target.value as OtType)}
-                      className="w-full h-[42px] appearance-none pl-3 pr-7 text-xs rounded-lg font-semibold cursor-pointer focus:outline-none focus:ring-2 border-2 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
+                      className="w-full h-[32px] appearance-none pl-2.5 pr-6 text-xs rounded-md font-semibold cursor-pointer focus:outline-none focus:ring-2 border bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
                     >
                       {OT_OPTIONS.map(o => (
                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -827,20 +827,10 @@ export const AttendanceTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Tổng hợp HC / OT */}
-              <div className="flex gap-3 pt-1">
-                <StatBadge label="HC" value={`${stats.hc.toFixed(1)} h`} color="#3b82f6" />
-                <StatBadge label="OT" value={`${stats.ot.toFixed(1)} h`} color="#22c55e" />
-              </div>
-
-              {/* Hủy / Lưu */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <button onClick={doCancel}
-                  className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 font-bold text-sm py-3 rounded-xl shadow-sm transition-all cursor-pointer active:scale-95">
-                  <X className="w-4 h-4" />✕ Hủy
-                </button>
+              {/* Nút Lưu duy nhất */}
+              <div className="pt-1">
                 <button onClick={doSave}
-                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-all cursor-pointer">
+                  className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-xs sm:text-sm py-2 rounded-lg shadow transition-all cursor-pointer">
                   <Save className="w-4 h-4" />💾 Lưu
                 </button>
               </div>
