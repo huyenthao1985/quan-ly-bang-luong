@@ -13,3 +13,5 @@ coverage/
 
 # Giữ lại file mẫu
 !.env.example
+
+.vercel
