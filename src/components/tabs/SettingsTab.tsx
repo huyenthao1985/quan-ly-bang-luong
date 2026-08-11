@@ -11,6 +11,7 @@ export const SettingsTab: React.FC = () => {
     updateSalaryConfig,
     payrollViewPermissions,
     updatePayrollViewPermissions,
+    viewerPosition,
     activeRole,
     showToast,
     employees,
@@ -30,6 +31,16 @@ export const SettingsTab: React.FC = () => {
   const [permMatrix, setPermMatrix] = useState(payrollViewPermissions);
 
   const positions: Position[] = ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP'];
+
+  // EPCC (allowance-table-view-permission) — bảng "Cấu hình phụ cấp theo vị trí" lộ mức
+  // phụ cấp của TẤT CẢ vị trí cho bất kỳ ai mở trang Cài đặt, kể cả Leader/User không được
+  // phép biết phụ cấp của vị trí khác mình. Tái dùng CHÍNH ma trận payrollViewPermissions
+  // đã dùng cho Bảng lương: Admin luôn thấy đủ 6 vị trí; Leader/User chỉ thấy các vị trí họ
+  // được phép xem (payrollViewPermissions[viewerPosition]), viewerPosition suy ra từ hồ sơ
+  // nhân viên vừa điểm danh gần nhất trên thiết bị (xem PayrollContext.viewerPosition).
+  const visibleAllowancePositions: Position[] = activeRole === 'Admin'
+    ? positions
+    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []);
 
   // EPCC (move-manual-inputs-to-settings) — mục "Nhập Tay Bổ Sung Theo Nhân Viên/Tháng":
   // CHUYỂN NGUYÊN state + handler từ PayslipTab.tsx sang đây theo yêu cầu người dùng, giữ
@@ -509,6 +520,16 @@ export const SettingsTab: React.FC = () => {
           )}
         </div>
 
+        {/* EPCC (allowance-table-view-permission) — nhắc rõ vì sao bảng bị thu hẹp, tránh
+            hiểu lầm là bug mất dữ liệu khi Leader/User chỉ thấy 1-2 dòng thay vì đủ 6. */}
+        {activeRole !== 'Admin' && (
+          <div className="mb-3 text-xs rounded-lg p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+            {viewerPosition
+              ? <>Chỉ hiện phụ cấp của các vị trí bạn được phân quyền xem (vị trí của bạn: <strong>{viewerPosition}</strong>). Admin có thể mở rộng quyền này ở mục "Phân quyền xem Bảng lương theo vị trí" bên dưới.</>
+              : <>Chưa xác định được vị trí của bạn (vào tab Điểm danh, chọn tên mình và Lưu điểm danh 1 lần trên thiết bị này) nên bảng phụ cấp đang không hiện vị trí nào.</>}
+          </div>
+        )}
+
         <table className="w-full text-xs text-left border-collapse table-fixed">
           <thead className="bg-[#122842] text-white uppercase text-[11.5px] font-bold">
             <tr>
@@ -526,7 +547,7 @@ export const SettingsTab: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-700 font-medium">
-            {positions.map((pos) => {
+            {visibleAllowancePositions.map((pos) => {
               const posConfig = config.positionAllowances[pos] || {
                 position: pos,
                 responsibilityAllowance: 0,
