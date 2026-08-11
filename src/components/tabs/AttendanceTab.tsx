@@ -131,33 +131,34 @@ function calcHcHours(startDec: number, endDec: number): number {
 }
 
 /**
- * Tính giờ OT = tổng giờ làm thực tế (trừ nghỉ trưa/ăn ca) − 8h hành chính.
- * Ca đêm (endDec < startDec): tổng giờ qua đêm − 8h HC = phần OT ca đêm.
+ * Tính giờ OT ngoài giờ:
+ * Quy tắc:
+ * - Ca ngày: Giờ tăng ca luôn được tính trực tiếp từ mốc 17:00 (5:00 PM) trở đi tới Giờ ra (endDec).
+ *   Dù nhân viên vào muộn từ mấy giờ đi nữa (vd: vào lúc 11:45 AM, 13:00 PM...), khi làm tới 20:00 (8:00 PM)
+ *   thì số giờ OT thuộc khung 17:00–20:00 luôn được tính đủ là 3.0h (không bị xén trừ do vào muộn).
+ * - Ca đêm (qua đêm): Tăng ca ngoài ca đêm được tính từ mốc 05:00 AM trở đi đến Giờ ra.
+ *   Làm đến 08:00 AM thì số giờ OT luôn tính là 3.0h (từ 05:00 đến 08:00 AM).
  */
 function calcOtHours(startDec: number, endDec: number): number {
   const isOvernight = endDec <= startDec;
 
   if (isOvernight) {
-    const total = calcOvernightTotal(startDec, endDec);
-    const ot = Math.max(0, total - 8);
+    // Ca đêm: làm ngoài mốc 05:00 AM (5.0) -> tính OT từ 05:00 AM đến giờ ra
+    if (endDec > 5.0) {
+      const ot = endDec - 5.0;
+      return Math.round(ot * 2) / 2;
+    }
+    return 0;
+  }
+
+  // Ca ngày: làm ngoài mốc 17:00 (17.0) -> tính OT từ mốc 17:00 (hoặc startDec nếu bắt đầu làm sau 17:00) đến giờ ra
+  if (endDec > 17.0) {
+    const otStart = Math.max(17.0, startDec);
+    const ot = endDec - otStart;
     return Math.round(ot * 2) / 2;
   }
 
-  // Ca ngày: tổng giờ thực − nghỉ trưa (12–13h) − HC
-  let total = endDec - startDec;
-  // Trừ khoảng nghỉ trưa nếu ca span qua giờ trưa (12–13h)
-  const lunchOverlap = Math.max(0, Math.min(endDec, 13) - Math.max(startDec, 12));
-  total -= lunchOverlap;
-
-  const hc = calcHcHours(startDec, endDec);
-  let rawOt = total - hc;
-
-  // Trừ 30 phút (0.5h) ăn cơm sáng/chiều khi làm OT
-  if (rawOt > 0) {
-    rawOt = Math.max(0, rawOt - 0.5);
-  }
-
-  return Math.round(rawOt * 2) / 2;
+  return 0;
 }
 
 /**
