@@ -74,6 +74,12 @@ interface PayrollContextType {
     field: string,
     value: number | string | boolean
   ) => void;
+  // EPCC (delete-attendance-day-row) — theo yêu cầu người dùng: cho phép xóa hẳn 1 dòng điểm
+  // danh (1 ngày cụ thể của 1 nhân viên) trong "Danh sách điểm danh gần đây", để nhập sai thì
+  // xóa đi nhập lại từ đầu thay vì phải sửa từng ô. Xóa nghĩa là gỡ hẳn key ngày đó khỏi
+  // dailyRecords (không phải set về 0 — set 0 vẫn để lại 1 bản ghi rỗng, khác với "chưa từng
+  // điểm danh ngày đó").
+  deleteAttendanceDay: (employeeId: string, dateStr: string) => void;
   updateAttendanceManualOverrides: (
     employeeId: string,
     overrides: Partial<EmployeeAttendanceRecord>
@@ -393,6 +399,28 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  // EPCC (delete-attendance-day-row) — gỡ hẳn key `dateStr` khỏi dailyRecords của nhân viên
+  // trong tháng/năm đang chọn (immutable: tạo object dailyRecords mới không chứa key đó).
+  const deleteAttendanceDay = (employeeId: string, dateStr: string) => {
+    const key = `${employeeId}_${selectedYear}_${selectedMonth}`;
+    changedAttendanceKeys.current.add(key);
+
+    setAttendanceRecords((prev) => {
+      const existingRecord = prev[key];
+      if (!existingRecord || !existingRecord.dailyRecords[dateStr]) return prev;
+
+      const { [dateStr]: _removed, ...restDailyRecords } = existingRecord.dailyRecords;
+
+      return {
+        ...prev,
+        [key]: {
+          ...existingRecord,
+          dailyRecords: restDailyRecords,
+        },
+      };
+    });
+  };
+
   const updateAttendanceManualOverrides = (
     employeeId: string,
     overrides: Partial<EmployeeAttendanceRecord>
@@ -552,6 +580,7 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
         seedSampleData,
 
         updateAttendanceDay,
+        deleteAttendanceDay,
         updateAttendanceManualOverrides,
         quickFillAttendanceMonth,
 

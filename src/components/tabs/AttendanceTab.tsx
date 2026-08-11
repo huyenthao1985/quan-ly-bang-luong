@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Calendar, Save, Search, User, Clock,
-  ChevronDown, X, LayoutList, PencilLine, Edit3,
+  ChevronDown, X, LayoutList, PencilLine, Edit3, Trash2,
 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { DailyAttendance } from '../../types/payroll';
@@ -70,6 +70,37 @@ function parseTime24(t: string): { h: number; m: number; ampm: 'AM' | 'PM' } {
 function calcOvernightTotal(startDec: number, endDec: number): number {
   const total = (24 - startDec) + endDec;
   return total > 4 ? total - 1.0 : total;
+}
+
+/**
+ * Tính số giờ chồng lấn giữa khung làm việc thực tế [startDec, endDec] (nếu endDec <=
+ * startDec nghĩa là ca qua đêm, tự động cộng thêm 24h vào endDec để biểu diễn "hôm sau")
+ * với 1 khung giờ mốc cố định [wStart, wEnd] trên cùng trục 24h mở rộng đó.
+ */
+function calcWindowOverlapHours(startDec: number, endDec: number, wStart: number, wEnd: number): number {
+  const s = startDec;
+  const e = endDec <= startDec ? endDec + 24 : endDec;
+  return Math.max(0, Math.min(e, wEnd) - Math.max(s, wStart));
+}
+
+/**
+ * EPCC (night-allowance-30-50-clock-window) - FIX theo yêu cầu người dùng: PC ca đêm 30%
+ * và 50% KHÔNG còn tính theo "toàn bộ 8h HC của ca đêm" như trước, mà tính đúng theo 2
+ * khung giờ CỐ ĐỊNH trên đồng hồ:
+ *   PC 30% = 22:00 → 05:00 (hôm sau)  — tối đa 7h thô, trừ 1h ăn ca giữa đêm → tối đa 6h.
+ *   PC 50% = 05:00 → 06:00 (hôm sau)  — tối đa 1h, không trừ ăn ca (khung quá ngắn).
+ * Giờ làm việc thực tế trước 22:00 (vd 20:00–22:00) hoặc sau 06:00 sẽ KHÔNG được tính vào
+ * 2 khoản phụ cấp này nữa.
+ */
+function calcNightAllowance30(startDec: number, endDec: number): number {
+  const raw = calcWindowOverlapHours(startDec, endDec, 22, 29); // 29 = 24 + 05:00 hôm sau
+  const adjusted = raw > 4 ? raw - 1.0 : raw;
+  return Math.round(Math.max(0, adjusted) * 2) / 2;
+}
+
+function calcNightAllowance50(startDec: number, endDec: number): number {
+  const raw = calcWindowOverlapHours(startDec, endDec, 29, 30); // 29–30 = 05:00–06:00 hôm sau
+  return Math.round(raw * 2) / 2;
 }
 
 /**
@@ -260,7 +291,7 @@ export const AttendanceTab: React.FC = () => {
     employees, attendanceRecords,
     selectedMonth, selectedYear,
     setSelectedMonth, setSelectedYear,
-    updateAttendanceDay, showToast,
+    updateAttendanceDay, deleteAttendanceDay, showToast,
     setLastCheckedInEmployeeId,
   } = usePayroll();
 
@@ -269,6 +300,12 @@ export const AttendanceTab: React.FC = () => {
   const [selEmpId, setSelEmpId] = useState('');
   const [status, setStatus] = useState<AttendanceStatus>('present');
   const [shift, setShift] = useState<ShiftType>('day');
+  // EPCC (require-fields-red-highlight-on-save) — theo yêu cầu người dùng: khi bấm "Lưu" mà
+  // còn ô bắt buộc (có dấu ●) chưa nhập, tô viền đỏ ô đó thay vì chỉ hiện toast lỗi. Trạng
+  // thái/Ca làm/Ngày luôn có giá trị mặc định (select/date không thể rỗng) nên trên thực tế
+  // chỉ "Nhân viên" mới có thể thực sự chưa chọn — cờ này bật lên sau lần bấm Lưu đầu tiên bị
+  // chặn, các ô bắt buộc sẽ tự hết đỏ ngay khi người dùng điền đúng (tính reactive theo state).
+  const [saveAttempted, setSaveAttempted] = useState(false);
   const [otType, setOtType] = useState<OtType>('none');
   const [specialDay, setSpecialDay] = useState<SpecialDay>('normal');
 
@@ -317,6 +354,20 @@ export const AttendanceTab: React.FC = () => {
     return calcOtHours(s, e);
   }, [editSH, editSMin, editSAP, editEH, editEMin, editEAP]);
 
+  // EPCC (night-allowance-30-50-clock-window) - preview PC ca đêm 30%/50% khi đang sửa
+  // trực tiếp 1 dòng, tính theo khung giờ cố định 22:00–05:00 / 05:00–06:00.
+  const editNight30Auto = useMemo(() => {
+    const s = toDecHours(editSH, editSMin, editSAP);
+    const e = toDecHours(editEH, editEMin, editEAP);
+    return calcNightAllowance30(s, e);
+  }, [editSH, editSMin, editSAP, editEH, editEMin, editEAP]);
+
+  const editNight50Auto = useMemo(() => {
+    const s = toDecHours(editSH, editSMin, editSAP);
+    const e = toDecHours(editEH, editEMin, editEAP);
+    return calcNightAllowance50(s, e);
+  }, [editSH, editSMin, editSAP, editEH, editEMin, editEAP]);
+
   // ── Click-to-edit: sửa từng ô riêng lẻ (không cần bấm nút Edit) ──────────
   // cellEdit = { date, field } xác định ô đang được sửa trực tiếp
   type CellField = 'shift' | 'checkIn' | 'checkOut' | 'hcHours' | 'otHours';
@@ -352,13 +403,15 @@ export const AttendanceTab: React.FC = () => {
       const s = parseTime24(inStr);  const startD = toDecHours(s.h, s.m, s.ampm);
       const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
-      const ot = calcOtHours(startD, endD);
-      updateAttendanceDay(selEmpId, rec.date, 'nightHours',  isNight ? hc : 0);
+      // EPCC (night-allowance-30-50-clock-window) - PC ca đêm 30%/50% tính theo khung giờ
+      // cố định 22:00–05:00 / 05:00–06:00 (calcNightAllowance30/50), không còn dùng
+      // calcOtHours() chung nữa khi là ca đêm.
+      updateAttendanceDay(selEmpId, rec.date, 'nightHours',  isNight ? calcNightAllowance30(startD, endD) : 0);
       updateAttendanceDay(selEmpId, rec.date, 'hcHours',     hc);
-      updateAttendanceDay(selEmpId, rec.date, 'otHours',     isNight ? ot : rec.otHours || 0);
+      updateAttendanceDay(selEmpId, rec.date, 'otHours',     isNight ? calcNightAllowance50(startD, endD) : rec.otHours || 0);
       showToast(`Đổi ca ngày ${rec.date} → ${isNight ? 'Ca đêm' : 'Ca ngày'}`);
     } else if (field === 'checkIn' || field === 'checkOut') {
-      // Lưu giờ vào/ra mới và chỉ tính lại HC — KHÔNG tự ghi đè OT (để người dùng nhập tay)
+      // Lưu giờ vào/ra mới và tính lại HC (+ PC đêm 30%/50% nếu là ca đêm)
       const isNight = (rec.nightHours || 0) > 0;
       const inStr  = field === 'checkIn'  ? cellVal : (rec.checkIn  || (isNight ? '20:00' : '07:30'));
       const outStr = field === 'checkOut' ? cellVal : (rec.checkOut || (isNight ? '05:00' : '17:00'));
@@ -368,9 +421,11 @@ export const AttendanceTab: React.FC = () => {
       const hc = calcHcHours(startD, endD);
       updateAttendanceDay(selEmpId, rec.date, 'hcHours', hc);
       if (isNight) {
-        // Ca đêm: nightHours = hcHours (toàn bộ giờ HC được tính phụ cấp đêm 30%)
-        // otHours GIỮ NGUYÊN — người dùng tự quyết định
-        updateAttendanceDay(selEmpId, rec.date, 'nightHours', hc);
+        // EPCC (night-allowance-30-50-clock-window) - Ca đêm: nightHours (PC 30%) và
+        // otHours (PC 50%) đều tính lại tự động theo khung giờ 22:00–05:00 / 05:00–06:00
+        // dựa trên giờ vào/ra mới, thay vì giữ nguyên otHours như trước.
+        updateAttendanceDay(selEmpId, rec.date, 'nightHours', calcNightAllowance30(startD, endD));
+        updateAttendanceDay(selEmpId, rec.date, 'otHours',    calcNightAllowance50(startD, endD));
       } else {
         // Ca ngày: tính lại OT từ giờ vào/ra
         const ot = calcOtHours(startD, endD);
@@ -428,8 +483,11 @@ export const AttendanceTab: React.FC = () => {
     const hcH = editHcAuto;
     let otH = 0, nightH = 0;
     if (editIsNight) {
-      nightH = hcH;
-      if (editOtAuto > 0) otH = editOtAuto;
+      // EPCC (night-allowance-30-50-clock-window) - PC ca đêm 30%/50% tính theo khung giờ
+      // cố định 22:00–05:00 / 05:00–06:00 (editNight30Auto/editNight50Auto), không còn
+      // dùng editHcAuto/editOtAuto (tổng HC/OT chung) cho 2 khoản này nữa.
+      nightH = editNight30Auto;
+      otH = editNight50Auto;
     } else {
       otH = editOtAuto;
     }
@@ -485,7 +543,7 @@ export const AttendanceTab: React.FC = () => {
   }, [selEmpId, selectedYear, selectedMonth, attendanceRecords]);
 
   const doSave = () => {
-    if (!selEmpId) { showToast('Vui lòng chọn nhân viên!', 'error'); return; }
+    if (!selEmpId) { setSaveAttempted(true); showToast('Vui lòng chọn nhân viên!', 'error'); return; }
     const ds = `${eYr}-${pad2(eMon)}-${pad2(eDay)}`;
     let hcH = 0, otH = 0, nightH = 0, sunH = 0, holH = 0, lpD = 0, laD = 0, luD = 0;
 
@@ -494,13 +552,13 @@ export const AttendanceTab: React.FC = () => {
     }
 
     if (shift === 'night') {
-      // EPCC (night-allowance-not-counted) - FIX ROOT CAUSE "PC ca đêm 30% luôn ra 0h/0đ với ca đêm chuẩn":
-      // Trước đây nightH = otAuto (chỉ phần giờ VƯỢT 8h), nên ca đêm đúng 8h không OT
-      // sẽ có otAuto = 0 => không được cộng phụ cấp đêm, dù đã làm đủ ca.
-      // Phụ cấp ca đêm 30% phải áp dụng cho TOÀN BỘ giờ làm trong ca đêm (kể cả 8h chuẩn,
-      // đang bị tính vào hcH). Phần vượt 8h (nếu có) vẫn là OT ca đêm, cộng riêng vào otH.
-      nightH = hcH;
-      if (otAuto > 0) otH = otAuto;
+      // EPCC (night-allowance-30-50-clock-window) - FIX theo yêu cầu người dùng: PC ca đêm
+      // 30% = khung 22:00–05:00 (tối đa 6h sau khi trừ ăn ca), PC ca đêm 50% = khung
+      // 05:00–06:00 (tối đa 1h) — xem calcNightAllowance30/50 để biết chi tiết công thức.
+      const sDec = toDecHours(sH, sMin, sAP);
+      const eDec = toDecHours(eH, eMin, eAP);
+      nightH = calcNightAllowance30(sDec, eDec);
+      otH = calcNightAllowance50(sDec, eDec);
     } else if (otType === 'sunday200') {
       sunH = otAuto;
     } else if (otType === 'holiday300') {
@@ -530,6 +588,7 @@ export const AttendanceTab: React.FC = () => {
 
     const nm = employees.find(e => e.id === selEmpId)?.fullName;
     showToast(`Đã lưu điểm danh ngày ${pad2(eDay)}/${pad2(eMon)}/${eYr} cho ${nm}! HC=${hcH}h | OT=${otH + sunH + holH}h`);
+    setSaveAttempted(false);
 
     // EPCC (checkin-sets-viewer-identity) — sau khi điểm danh xong, nhớ nhân viên này là
     // người đang dùng thiết bị/trình duyệt này (localStorage, chỉ áp dụng cho máy này),
@@ -559,6 +618,7 @@ export const AttendanceTab: React.FC = () => {
     setSelEmpId(''); setStatus('present'); setShift('day'); setOtType('none'); setSpecialDay('normal');
     // Reset về mặc định ca ngày
     setSH(7); setSMin(30); setSAP('AM'); setEH(8); setEMin(0); setEAP('PM');
+    setSaveAttempted(false);
   };
 
   const filteredEmps = employees.filter(e =>
@@ -663,31 +723,10 @@ export const AttendanceTab: React.FC = () => {
                 </h3>
               </div>
               <div className="p-4 space-y-4">
-                {/* EPCC (shift-between-status-date) - FIX theo yêu cầu người
-                    dùng: chuyển field "Ca làm" từ card "Thông tin nhân viên"
-                    sang đây, đặt giữa "Trạng thái" và "Ngày", đổi grid-cols-2
-                    -> grid-cols-3 để 3 field rộng bằng nhau, cân đối. */}
-                <div className="grid grid-cols-3 gap-3">
-                  <SelectRow
-                    label="Trạng thái" required
-                    value={status} onChange={v => setStatus(v as AttendanceStatus)}
-                    options={STATUS_OPTIONS}
-                    rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
-                    style={{ color: statusColor }}
-                  />
-                  <SelectRow
-                    label="Ca làm" required value={shift} onChange={v => onShiftChange(v as ShiftType)}
-                    options={SHIFT_OPTIONS}
-                    rowCls="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-slate-800 dark:text-slate-100 focus:ring-yellow-400"
-                  />
-                  <div>
-                    <label className="block text-[11px] font-bold text-red-500 mb-1">● Ngày</label>
-                    <input type="date"
-                      value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
-                      onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
-                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
-                  </div>
-                </div>
+                {/* EPCC (status-shift-date-moved-to-employee-card) - FIX theo
+                    yêu cầu người dùng: hàng "Trạng thái / Ca làm / Ngày" đã
+                    CHUYỂN sang card "Thông tin nhân viên" bên phải (đặt phía
+                    trên "Nhân viên" / "Ngày đặc biệt"), không còn ở đây nữa. */}
                 <div className="grid grid-cols-2 gap-3">
                   <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
                   <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
@@ -768,21 +807,24 @@ export const AttendanceTab: React.FC = () => {
                 </h3>
               </div>
               <div className="p-4 space-y-3">
-                {/* EPCC (employee-date-row-statbadges-inside) - FIX theo yêu
-                    cầu người dùng: "Ngày đặc biệt" trước đây nằm 1 mình ở
-                    dòng riêng bên dưới "Nhân viên" (2 field lệch kích thước
-                    nhau: 1 field full-width, 1 field full-width). Gộp 2 field
-                    vào chung 1 hàng grid-cols-2 (mỗi field rộng bằng nhau,
-                    song song với nhau) thay vì xếp chồng theo chiều dọc.
-                    Đồng thời chuyển 3 StatBadge (HC/OT/Tổng cộng) — trước đây
-                    nằm rời bên dưới, ngoài cả 2 card — vào trong card này. */}
+                {/* EPCC (swap-employee-row-above-status-row) - FIX theo yêu
+                    cầu người dùng: đổi chỗ 2 hàng trong card "Thông tin nhân
+                    viên" — hàng "Nhân viên" / "Ngày đặc biệt" chuyển lên
+                    trên, hàng "Trạng thái" / "Ca làm" / "Ngày" chuyển xuống
+                    dưới (trước đây ngược lại). */}
                 <div className="grid grid-cols-2 gap-3">
                   {/* Employee picker */}
                   <div>
                     <label className="block text-[11px] font-bold text-red-500 mb-1">● Nhân viên</label>
                     <div className="relative">
                       <select value={selEmpId} onChange={e => setSelEmpId(e.target.value)}
-                        className={`w-full appearance-none pl-3 pr-7 py-2 text-xs border rounded-lg font-semibold cursor-pointer focus:ring-2 focus:ring-yellow-400 focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${selEmpId ? 'border-yellow-400 text-slate-800 dark:text-slate-100' : 'border-yellow-300 text-slate-400'}`}>
+                        className={`w-full appearance-none pl-3 pr-7 py-2 text-xs border rounded-lg font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
+                          saveAttempted && !selEmpId
+                            ? 'border-red-500 ring-2 ring-red-300 dark:ring-red-800 text-slate-400'
+                            : selEmpId
+                              ? 'border-yellow-400 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-yellow-400'
+                              : 'border-yellow-300 text-slate-400 focus:ring-2 focus:ring-yellow-400'
+                        }`}>
                         <option value="">Chọn nhân viên</option>
                         {employees.map(e => (
                           <option key={e.id} value={e.id}>[{e.id}] {e.fullName} – {e.department}</option>
@@ -790,6 +832,9 @@ export const AttendanceTab: React.FC = () => {
                       </select>
                       <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                     </div>
+                    {saveAttempted && !selEmpId && (
+                      <p className="mt-1 text-[10px] font-semibold text-red-500">⚠ Vui lòng chọn nhân viên trước khi lưu.</p>
+                    )}
                   </div>
                   {/* EPCC (shift-between-status-date) - field "Ca làm" đã
                       chuyển sang card "Thông tin chấm công" (giữa Trạng thái
@@ -797,6 +842,33 @@ export const AttendanceTab: React.FC = () => {
                   {/* EPCC (ot-type-next-to-ot-hours) - field "Loại OT / Phụ
                       cấp" đã chuyển sang card "Thông tin chấm công" (cạnh ô
                       "OT ngoài giờ"), không lặp lại ở đây nữa. */}
+                  {/* EPCC (swap-ngay-with-ngaydacbiet) - FIX theo yêu cầu
+                      người dùng: đổi chỗ "Ngày đặc biệt" và "Ngày" cho
+                      nhau — "Ngày" chuyển lên hàng trên (cạnh "Nhân
+                      viên"), "Ngày đặc biệt" chuyển xuống hàng dưới (cạnh
+                      "Trạng thái" / "Ca làm"). */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-red-500 mb-1">● Ngày</label>
+                    <input type="date"
+                      value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
+                      onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <SelectRow
+                    label="Trạng thái" required
+                    value={status} onChange={v => setStatus(v as AttendanceStatus)}
+                    options={STATUS_OPTIONS}
+                    rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
+                    style={{ color: statusColor }}
+                  />
+                  <SelectRow
+                    label="Ca làm" required value={shift} onChange={v => onShiftChange(v as ShiftType)}
+                    options={SHIFT_OPTIONS}
+                    rowCls="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-slate-800 dark:text-slate-100 focus:ring-yellow-400"
+                  />
                   <SelectRow
                     label="Ngày đặc biệt" value={specialDay} onChange={v => setSpecialDay(v as SpecialDay)}
                     options={SPECIAL_OPTIONS}
@@ -837,14 +909,20 @@ export const AttendanceTab: React.FC = () => {
                     bỏ hẳn cột "STT", chuyển cột "Ngày" lên vị trí đầu tiên. */}
                 <thead className="bg-[#122842] text-white text-[11px] font-bold uppercase">
                   <tr>
-                    {['Ngày','Mã NV','Họ tên','Vị trí','Ca làm','Trạng thái','Giờ vào','Giờ ra','HC (h)','OT (h)','Thao tác']
+                    {/* EPCC (add-night-allowance-30-50-columns) - FIX theo
+                        yêu cầu người dùng: thêm 2 cột "PC Đêm 30%" (nightHours)
+                        và "PC Đêm 50%" (otHours phát sinh trong ca đêm) vào
+                        bảng "Danh sách điểm danh gần đây", đặt giữa "OT (h)"
+                        và "Thao tác" — cùng nguồn dữ liệu và ý nghĩa với 2 cột
+                        "Đêm 30%"/"Đêm 50%" ở bảng tổng hợp phía dưới. */}
+                    {['Ngày','Mã NV','Họ tên','Vị trí','Ca làm','Trạng thái','Giờ vào','Giờ ra','HC (h)','OT (h)','PC Đêm 30%','PC Đêm 50%','Thao tác']
                       .map(h => <th key={h} className="py-2 px-3 text-left">{h}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {recentRecs.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="py-8 text-center text-slate-400 text-xs">
+                      <td colSpan={13} className="py-8 text-center text-slate-400 text-xs">
                         {selEmpId
                           ? 'Chưa có bản ghi điểm danh nào. Hãy nhập thông tin phía trên và nhấn Lưu!'
                           : 'Chọn nhân viên để xem danh sách điểm danh.'}
@@ -855,6 +933,21 @@ export const AttendanceTab: React.FC = () => {
                     // OT hiển thị = otHours tăng ca thuần. nightHours là phụ cấp ca đêm riêng (không phải OT thêm giờ).
                     // sundayHours/holidayHours cũng hiển thị riêng nếu cần, nhưng tạm gộp vào đây để giữ 1 cột.
                     const ot = (rec.otHours || 0) + (rec.sundayHours || 0) + (rec.holidayHours || 0);
+                    // EPCC (night-allowance-live-recompute-old-records) - FIX theo yêu cầu
+                    // người dùng: các bản ghi CŨ (lưu trước khi đổi công thức) vẫn còn giữ
+                    // nightHours/otHours tính theo công thức cũ (toàn bộ 8h HC / OT thô) nên
+                    // hiển thị sai (vd 8.0/3.0 thay vì 6.0/1.0). FIX ROOT CAUSE: tính LẠI PC
+                    // Đêm 30%/50% NGAY TẠI ĐÂY từ checkIn/checkOut thực tế bằng
+                    // calcNightAllowance30/50 (khung 22:00–05:00 / 05:00–06:00), không đọc
+                    // trực tiếp rec.nightHours/rec.otHours nữa — đảm bảo luôn đúng công thức
+                    // mới nhất kể cả với dữ liệu đã lưu từ trước.
+                    const isNightRow = (rec.nightHours || 0) > 0;
+                    const pcIn  = parseTime24(rec.checkIn  || (isNightRow ? '20:00' : '07:30'));
+                    const pcOut = parseTime24(rec.checkOut || (isNightRow ? '05:00' : '17:00'));
+                    const pcStartDec = toDecHours(pcIn.h, pcIn.m, pcIn.ampm);
+                    const pcEndDec   = toDecHours(pcOut.h, pcOut.m, pcOut.ampm);
+                    const pc30 = isNightRow ? calcNightAllowance30(pcStartDec, pcEndDec) : 0;
+                    const pc50 = isNightRow ? calcNightAllowance50(pcStartDec, pcEndDec) : 0;
                     const badge = (text: string, cls: string) =>
                       <span className={`inline-flex px-2 py-0.5 rounded-full font-semibold text-[10px] ${cls}`}>{text}</span>;
                     // EPCC (date-first-no-stt) - tính isEditing sớm hơn (trước đây khai
@@ -875,7 +968,7 @@ export const AttendanceTab: React.FC = () => {
                         {isEditing ? (
                           <td className="py-1.5 px-2">
                             <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
-                              className="w-full px-1.5 py-1 text-[11px] font-mono bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                              className="w-full px-1.5 py-1 text-[11px] font-mono bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500" />
                           </td>
                         ) : (
                           <td className="py-2 px-3 font-bold text-slate-900 dark:text-slate-100 font-mono">{dDay}/{dMonth}</td>
@@ -983,13 +1076,38 @@ export const AttendanceTab: React.FC = () => {
                                       onKeyDown={e => { if (e.key === 'Enter') commitCellEdit(rec); if (e.key === 'Escape') cancelCellEdit(); }} />
                                   </EditableCell>
                                 </td>
+                                {/* PC ĐÊM 30% — tính live từ checkIn/checkOut theo khung 22:00–05:00 (calcNightAllowance30) */}
+                                <td className="py-2 px-3 text-center font-bold text-indigo-600 dark:text-indigo-300">
+                                  {pc30 > 0 ? pc30.toFixed(1) : '–'}
+                                </td>
+                                {/* PC ĐÊM 50% — tính live từ checkIn/checkOut theo khung 05:00–06:00 (calcNightAllowance50) */}
+                                <td className="py-2 px-3 text-center font-bold text-purple-600 dark:text-purple-300">
+                                  {pc50 > 0 ? pc50.toFixed(1) : '–'}
+                                </td>
                                 <td className="py-2 px-3 text-center">
-                                  <button
-                                    onClick={() => startEditRow(rec)}
-                                    title="Sửa toàn bộ dòng"
-                                    className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-500 transition-colors">
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                  </button>
+                                  <div className="flex gap-1 justify-center">
+                                    <button
+                                      onClick={() => startEditRow(rec)}
+                                      title="Sửa toàn bộ dòng"
+                                      className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-500 transition-colors">
+                                      <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    {/* EPCC (delete-attendance-day-row) — nút xóa hẳn 1 dòng
+                                        điểm danh (1 ngày) khi nhập sai, để nhập lại từ đầu.
+                                        Có window.confirm chặn trước để tránh bấm nhầm mất dữ
+                                        liệu ngày đó. */}
+                                    <button
+                                      onClick={() => {
+                                        if (window.confirm(`Xóa điểm danh ngày ${dDay}/${dMonth} của ${emp?.fullName}? Hành động này không thể hoàn tác.`)) {
+                                          deleteAttendanceDay(selEmpId, rec.date);
+                                          showToast(`Đã xóa điểm danh ngày ${dDay}/${dMonth} — vui lòng nhập lại nếu cần.`, 'success');
+                                        }
+                                      }}
+                                      title="Xóa dòng — nhập sai thì xóa để nhập lại"
+                                      className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </td>
                               </>
                             );
@@ -1005,7 +1123,7 @@ export const AttendanceTab: React.FC = () => {
                                   setEditIsNight(night);
                                   if (night) { setEditSH(8); setEditSMin(0); setEditSAP('PM'); setEditEH(5); setEditEMin(0); setEditEAP('AM'); }
                                   else { setEditSH(7); setEditSMin(30); setEditSAP('AM'); setEditEH(5); setEditEMin(0); setEditEAP('PM'); }
-                                }} className="w-full px-1.5 py-1 text-[11px] font-semibold bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                }} className="w-full px-1.5 py-1 text-[11px] font-semibold bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500">
                                   <option value="day">Ca ngày</option>
                                   <option value="night">Ca đêm</option>
                                 </select>
@@ -1014,15 +1132,15 @@ export const AttendanceTab: React.FC = () => {
                               <td className="py-1.5 px-1">
                                 <div className="flex gap-0.5 justify-center">
                                   <select value={editSH} onChange={e => setEditSH(Number(e.target.value))}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(hv => <option key={hv} value={hv}>{pad2(hv)}</option>)}
                                   </select>
                                   <select value={editSMin} onChange={e => setEditSMin(Number(e.target.value))}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     {[0, 15, 30, 45].map(mv => <option key={mv} value={mv}>{pad2(mv)}</option>)}
                                   </select>
                                   <select value={editSAP} onChange={e => setEditSAP(e.target.value as 'AM' | 'PM')}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     <option>AM</option><option>PM</option>
                                   </select>
                                 </div>
@@ -1030,21 +1148,24 @@ export const AttendanceTab: React.FC = () => {
                               <td className="py-1.5 px-1">
                                 <div className="flex gap-0.5 justify-center">
                                   <select value={editEH} onChange={e => setEditEH(Number(e.target.value))}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     {Array.from({ length: 12 }, (_, i) => i + 1).map(hv => <option key={hv} value={hv}>{pad2(hv)}</option>)}
                                   </select>
                                   <select value={editEMin} onChange={e => setEditEMin(Number(e.target.value))}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     {[0, 15, 30, 45].map(mv => <option key={mv} value={mv}>{pad2(mv)}</option>)}
                                   </select>
                                   <select value={editEAP} onChange={e => setEditEAP(e.target.value as 'AM' | 'PM')}
-                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded">
+                                    className="w-10 px-0.5 py-1 text-[10px] bg-yellow-50 dark:bg-yellow-950/30 border border-amber-400 rounded text-slate-900 dark:text-slate-100">
                                     <option>AM</option><option>PM</option>
                                   </select>
                                 </div>
                               </td>
                               <td className="py-1.5 px-2 text-center font-bold text-blue-700 dark:text-blue-300">{editHcAuto.toFixed(1)}</td>
                               <td className="py-1.5 px-2 text-center font-bold text-amber-600 dark:text-amber-300">{editOtAuto > 0 ? editOtAuto.toFixed(1) : '–'}</td>
+                              {/* PC ĐÊM 30%/50% khi đang sửa trực tiếp — theo khung giờ cố định 22:00–05:00 / 05:00–06:00 (calcNightAllowance30/50) */}
+                              <td className="py-1.5 px-2 text-center font-bold text-indigo-600 dark:text-indigo-300">{editIsNight && editNight30Auto > 0 ? editNight30Auto.toFixed(1) : '–'}</td>
+                              <td className="py-1.5 px-2 text-center font-bold text-purple-600 dark:text-purple-300">{editIsNight && editNight50Auto > 0 ? editNight50Auto.toFixed(1) : '–'}</td>
                               <td className="py-1.5 px-2 text-center">
                                 <div className="flex gap-1 justify-center">
                                   <button onClick={() => saveEditRow(rec)} title="Lưu"
@@ -1095,60 +1216,78 @@ export const AttendanceTab: React.FC = () => {
                   const rec = attendanceRecords[`${emp.id}_${selectedYear}_${selectedMonth}`];
                   let tHc = 0, tOt = 0, tNightOt = 0, tN = 0, tSun = 0, tHol = 0, tLp = 0, tLa = 0, tLu = 0;
                   if (rec?.dailyRecords) (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
-                    tHc += d.hcHours || 0; tN += d.nightHours || 0;
-                    // "Đêm 50%": OT phát sinh trong những ngày làm ca đêm (nightHours > 0) — tách
-                    // riêng khỏi "OT 150%" (OT của ca ngày), dù cùng lưu chung trường otHours.
+                    tHc += d.hcHours || 0;
+                    // EPCC (night-allowance-live-recompute-summary-table) - FIX theo yêu cầu
+                    // người dùng: đồng bộ với "Danh sách điểm danh gần đây" — cột "Đêm 30%"/
+                    // "Đêm 50%" ở bảng này KHÔNG còn đọc thẳng d.nightHours/d.otHours đã lưu
+                    // (có thể là dữ liệu cũ, tính theo công thức cũ) nữa, mà tính LẠI LIVE từ
+                    // checkIn/checkOut thực tế bằng calcNightAllowance30/50 (khung 22:00–05:00
+                    // / 05:00–06:00), giống hệt công thức dùng ở bảng "Danh sách điểm danh
+                    // gần đây" — đảm bảo 2 bảng luôn khớp số nhau.
                     if ((d.nightHours || 0) > 0) {
-                      tNightOt += d.otHours || 0;
-                    } else {
-                      tOt += d.otHours || 0;
+                      const dIn  = parseTime24(d.checkIn  || '20:00');
+                      const dOut = parseTime24(d.checkOut || '05:00');
+                      const dStartDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
+                      const dEndDec   = toDecHours(dOut.h, dOut.m, dOut.ampm);
+                      tN += calcNightAllowance30(dStartDec, dEndDec);
+                      tNightOt += calcNightAllowance50(dStartDec, dEndDec);
                     }
+                    // EPCC (ot-night-double-count-bug-fix) — FIX ROOT CAUSE "OT 150% không khớp
+                    // với Nhập điểm danh": trước đây nếu ngày đó là ca đêm (nightHours > 0),
+                    // otHours của ngày đó bị CHUYỂN HẲN sang tNightOt ("Đêm 50%") và KHÔNG cộng
+                    // vào tOt ("OT 150%") nữa — trong khi `getDayVal()` (ma trận ngày HC/OT phía
+                    // dưới) và "Danh sách điểm danh gần đây" (EditableCell) đều hiển thị NGUYÊN
+                    // otHours, không loại trừ gì. 2 công thức khác nhau trên cùng 1 nguồn dữ liệu
+                    // ⇒ số liệu lệch nhau (vd Lê Anh Tú: chi tiết có 18h OT nhưng "OT 150%" trống).
+                    // FIX: tOt LUÔN cộng nguyên otHours (không phân biệt ca ngày/ca đêm) để khớp
+                    // với 2 nơi kia. tNightOt ("Đêm 50%") giờ tính live ở trên (không còn dùng
+                    // otHours đã lưu) — vẫn giữ ý nghĩa "khoản PHỤ CẤP CỘNG THÊM cho phần OT rơi
+                    // vào ca đêm", ngoài phần OT 150% (tOt) đã tính.
+                    tOt += d.otHours || 0;
                     tSun += d.sundayHours || 0; tHol += d.holidayHours || 0;
                     tLp += d.leavePaidDays || 0; tLa += d.leaveAnnualDays || 0;
                     // Nghỉ không lương: dùng để Bảng lương xét điều kiện phụ cấp chuyên cần
                     // (thường chỉ áp dụng khi không có ngày nghỉ không lương nào trong kỳ).
                     tLu += d.leaveUnpaidDays || 0;
                   });
-                  const mk = (val: number, field: string, cls: string) => (
-                    <input type="number" step="0.5" min="0" value={val}
-                      className={`w-20 text-center py-0.5 rounded font-semibold focus:ring-1 focus:outline-none border ${cls}`}
-                      onChange={e => updateAttendanceDay(emp.id, `${selectedYear}-${mp}-01`, field, Number(e.target.value))} />
+                  // EPCC (attendance-summary-plain-numbers) — theo yêu cầu: bỏ các ô "hộp"
+                  // (input có nền màu + viền bo góc) ở dải cột HC (Công) → Chuyên Cần trong
+                  // bảng tổng hợp này, chỉ còn hiển thị CHỮ SỐ thuần (căn giữa, không nền/viền).
+                  // Giá trị = 0 sẽ ẩn hẳn (chuỗi rỗng) thay vì hiện số 0, đúng yêu cầu "chỉ hiển
+                  // thị số > 0". Lưu ý: bảng này KHÔNG còn sửa trực tiếp được nữa (trước đây
+                  // mk()/mkHcCong() là input onChange ghi đè cả tháng) — muốn sửa dữ liệu, dùng
+                  // "Ma trận ngày HC/OT theo nhân viên" ngay bên dưới (sửa theo từng ngày).
+                  const fmt = (n: number) => {
+                    if (!n) return '';
+                    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+                  };
+                  const cell = (val: number, cls: string) => (
+                    <span className={`inline-block w-full text-center font-semibold ${cls}`}>{fmt(val)}</span>
                   );
-                  // HC hiển thị/nhập theo đơn vị "Công" (8h = 1 công) để hợp lý hóa với cách
-                  // tính số ngày công trong Bảng lương. Dữ liệu gốc (hcHours) vẫn lưu bằng GIỜ —
-                  // chỉ quy đổi 2 chiều ở lớp hiển thị/nhập liệu này.
-                  const mkHcCong = (hours: number, cls: string) => (
-                    <input type="number" step="0.5" min="0" value={Math.round((hours / 8) * 2) / 2}
-                      className={`w-20 text-center py-0.5 rounded font-semibold focus:ring-1 focus:outline-none border ${cls}`}
-                      onChange={e => updateAttendanceDay(emp.id, `${selectedYear}-${mp}-01`, 'hcHours', Number(e.target.value) * 8)} />
-                  );
+                  const hcCong = Math.round((tHc / 8) * 2) / 2;
                   return (
                     <tr key={emp.id} className="hover:bg-blue-50/40 dark:hover:bg-slate-700/40">
                       <td className="py-0.5 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight whitespace-nowrap">{emp.id}</td>
                       <td className="py-0.5 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden">{emp.fullName}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mkHcCong(tHc,'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:ring-blue-500')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tOt,'otHours','bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tN,'nightHours','bg-indigo-50 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 text-indigo-900 dark:text-indigo-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">
-                        <input type="number" step="0.5" value={tNightOt} readOnly
-                          title="Tự động gộp từ OT phát sinh trong các ngày làm ca đêm — sửa ở ma trận ngày/mục Nhập điểm danh"
-                          className="w-20 text-center py-0.5 rounded font-semibold border bg-violet-50 dark:bg-violet-950/40 border-violet-300 dark:border-violet-700 text-violet-900 dark:text-violet-200 cursor-not-allowed" />
-                      </td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tSun,'sundayHours','bg-red-50 dark:bg-red-950/40 border-red-300 dark:border-red-700 text-red-900 dark:text-red-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tHol,'holidayHours','bg-purple-50 dark:bg-purple-950/40 border-purple-300 dark:border-purple-700 text-purple-900 dark:text-purple-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tLp,'leavePaidDays','bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tLa,'leaveAnnualDays','bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200')}</td>
-                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{mk(tLu,'leaveUnpaidDays','bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(hcCong,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tOt,'text-amber-900 dark:text-amber-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tN,'text-indigo-900 dark:text-indigo-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tNightOt,'text-violet-900 dark:text-violet-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tSun,'text-red-900 dark:text-red-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tHol,'text-purple-900 dark:text-purple-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLp,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLa,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLu,'text-rose-900 dark:text-rose-200')}</td>
                       {(() => {
                         // Lấy số phép bù còn lại từ Hồ sơ nhân viên (EmployeeProfilesTab →
                         // field Employee.compLeaveBalance) để xét điều kiện chuyên cần chính xác.
                         const cc = checkChuyenCanEligible(tLu, emp.compLeaveBalance || 0);
                         return (
                           <td className="py-0.5 px-2 text-center" title={cc.reason}>
-                            <span className={`inline-block w-full py-0.5 rounded font-semibold text-[11px] ${
+                            <span className={`inline-block w-full text-center font-semibold text-[11px] ${
                               cc.eligible
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
-                                : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-700'
+                                ? 'text-emerald-700 dark:text-emerald-300'
+                                : 'text-red-700 dark:text-red-300'
                             }`}>
                               {cc.eligible ? 'Đạt' : `Không đạt (${cc.suggestedUnauthorizedAbsenceDays})`}
                             </span>
@@ -1212,8 +1351,8 @@ export const AttendanceTab: React.FC = () => {
                         <td rowSpan={2} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b border-slate-300 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden">
                           {emp.fullName}
                         </td>
-                        <td className="py-1 px-2 font-bold text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/30 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
-                          <span className="text-[10px]">HC</span> <span className="text-[8px] font-normal text-blue-500 dark:text-blue-400">(Công)</span>
+                        <td className="py-1 px-2 font-bold bg-blue-50/50 dark:bg-blue-950/30 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
+                          <span className="text-[10px] text-black dark:text-black">HC</span> <span className="text-[9.6px] font-normal text-black dark:text-black">(Công)</span>
                         </td>
 
                         {monthDays.map((d) => {
@@ -1221,7 +1360,7 @@ export const AttendanceTab: React.FC = () => {
                           const cong = val / 8; // Quy đổi HC sang đơn vị Công (8h = 1 công)
                           return (
                             <td key={d.dateStr} className={`py-1 px-1 text-center border-r border-slate-200 dark:border-slate-700 text-[11px] ${d.isSunday ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
-                              {val > 0 ? cong.toFixed(1) : '-'}
+                              {val > 0 ? cong.toFixed(1) : ''}
                             </td>
                           );
                         })}
@@ -1242,7 +1381,7 @@ export const AttendanceTab: React.FC = () => {
                           const val = getDayVal(emp.id, d.dateStr, 'ot');
                           return (
                             <td key={d.dateStr} className={`py-1 px-1 text-center border-r border-slate-200 dark:border-slate-700 text-[11px] ${d.isSunday ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
-                              {val > 0 ? val.toFixed(1) : '-'}
+                              {val > 0 ? val.toFixed(1) : ''}
                             </td>
                           );
                         })}

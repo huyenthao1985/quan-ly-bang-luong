@@ -44,6 +44,7 @@ export const Sidebar: React.FC = () => {
         .sidebar .sidebar-header {
           background: linear-gradient(90deg, #026466 0%, #026466 62%, #cfdc00 100%) !important;
           border-bottom: 1px solid rgba(0,0,0,0.15) !important;
+          justify-content: center !important;
         }
         .sidebar .sidebar-item-index {
           background: rgb(220,216,0) !important;
@@ -73,9 +74,9 @@ export const Sidebar: React.FC = () => {
       `}</style>
 
       <div className="sidebar-header">
-        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.15, gap: '1px' }}>
-          <span style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff' }}>PPC</span>
-          <span style={{ fontWeight: 800, fontSize: '15px', color: '#cfdc00' }}>TEAM</span>
+        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '5px' }}>
+          <span style={{ fontWeight: 800, fontSize: '19px', color: '#ffffff', whiteSpace: 'nowrap' }}>PPC</span>
+          <span style={{ fontWeight: 800, fontSize: '19px', color: '#cfdc00', whiteSpace: 'nowrap' }}>TEAM</span>
         </div>
       </div>
 
