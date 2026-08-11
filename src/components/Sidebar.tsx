@@ -1,5 +1,6 @@
 import React from 'react';
-import { Sun, Moon, Shield, UserCheck, Users } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Sun, Moon, Shield, UserCheck, Users, ChevronRight, ChevronLeft } from 'lucide-react';
 import { usePayroll } from '../context/PayrollContext';
 import { UserRole } from '../types/payroll';
 
@@ -23,32 +24,137 @@ const ROLE_META: Record<UserRole, { label: string; icon: any }> = {
   User: { label: 'User (Xem lương)', icon: Users },
 };
 
-export const Sidebar: React.FC = () => {
+// FIX (toggle-all-screens): theo yêu cầu người dùng, Sidebar giờ ẩn/hiện
+// được ở CẢ điện thoại lẫn laptop (trước đây chỉ mobile mới có drawer, còn
+// desktop luôn cố định mở — nay bỏ hẳn ràng buộc "always-expanded" trên
+// desktop). Đổi tên prop mobileOpen/onCloseMobile → open/onClose cho đúng
+// bản chất tổng quát. Sidebar giờ luôn ở dạng overlay position:fixed, trượt
+// ẩn/hiện bằng transform, có backdrop mờ, áp dụng đồng nhất ở mọi kích
+// thước màn hình — không còn phân biệt qua @media (max-width) nữa.
+interface SidebarProps {
+  open?: boolean;
+  onClose?: () => void;
+  onOpen?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen }) => {
   const { activeTab, setActiveTab, theme, toggleTheme, activeRole, setActiveRole, currentUser } = usePayroll() as any;
   const RoleIcon = ROLE_META[activeRole as UserRole].icon;
+  const [reopenHover, setReopenHover] = React.useState(false);
+
+  // FIX (keep-sidebar-state-on-select): trước đây chọn menu xong tự gọi
+  // onClose?.() để đóng Sidebar lại (hành vi off-canvas). Theo yêu cầu
+  // người dùng, việc đóng/mở Sidebar giờ CHỈ do nút mũi tên vàng (toggle
+  // button) điều khiển — chọn 1 mục trong menu không còn tự động đóng
+  // Sidebar nữa, trạng thái mở/đóng được giữ nguyên xuyên suốt.
+  const handleSelectTab = (id: string) => {
+    setActiveTab(id);
+  };
 
   return (
-    // FIX (always-expanded): bỏ hẳn class "collapsed" và nút thu gọn — theo
-    // yêu cầu người dùng, Sidebar luôn ở trạng thái mở cố định, không còn
-    // toggle nữa.
-    <aside className="sidebar">
+    <>
+      {/* FIX (push-not-overlay): trước đây có lớp backdrop mờ đen phủ toàn
+          màn hình khi Sidebar mở — trên laptop điều đó khiến Sidebar ĐÈ lên
+          nội dung (chữ "Danh sách nhân viên...", footer, cột bảng bị cắt/che
+          như ảnh người dùng gửi) vì .app-content vẫn margin-left:0. Bỏ hẳn
+          backdrop, thay bằng cơ chế ĐẨY: khi Sidebar mở, .app-content được
+          margin-left = đúng bề rộng Sidebar (xem CSS "sidebar.open +
+          .app-content" bên dưới) để nội dung tự lùi sang phải, không còn bị
+          che chữ nữa, dù xem trên điện thoại hay laptop. */}
+
+      {/* FIX (single-toggle-button): theo yêu cầu người dùng, trước đây có
+          2 nút khác nhau ở 2 vị trí khác nhau tuỳ trạng thái — hamburger
+          (☰) trong Header khi Sidebar mở, và tab mũi tên vàng dính mép khi
+          Sidebar đóng — gây cảm giác nút "nhảy chỗ". Giờ GỘP LÀM 1 nút duy
+          nhất, luôn render tại đúng 1 vị trí cố định (top:0, left:0, cùng
+          kích thước, cùng màu vàng) cho cả 2 trạng thái, chỉ đổi HƯỚNG mũi
+          tên để báo hành động: ChevronRight (trỏ phải) khi đang đóng = "bấm
+          để mở", ChevronLeft (trỏ trái) khi đang mở = "bấm để đóng". Vẫn
+          giữ nguyên cơ chế portal + inline style + z-index cực cao đã fix
+          ở bước trước (không phụ thuộc CSS ngoài, không bị ancestor
+          transform/overflow làm mất/lệch vị trí). Header không còn nút
+          hamburang riêng nữa (đã xoá trong Header.tsx). */}
+      {createPortal(
+        <button
+          type="button"
+          onClick={() => (open ? onClose?.() : onOpen?.())}
+          onMouseEnter={() => setReopenHover(true)}
+          onMouseLeave={() => setReopenHover(false)}
+          aria-label={open ? 'Đóng Sidebar' : 'Mở Sidebar'}
+          style={{
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            width: reopenHover ? 28 : 24,
+            height: 60,
+            background: 'rgb(220,216,0)',
+            border: 'none',
+            borderRadius: '0 10px 10px 0',
+            boxShadow: '2px 0 8px rgba(0,0,0,0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 2147483000,
+            padding: 0,
+            transition: 'width 0.15s ease',
+          }}
+        >
+          {open
+            ? <ChevronLeft size={18} color="#0b1220" />
+            : <ChevronRight size={18} color="#0b1220" />}
+        </button>,
+        document.body
+      )}
+
+
+      <aside className={`sidebar${open ? ' open' : ''}`}>
       {/* Lớp ghi đè màu thương hiệu — !important để thắng biến mặc định
           (--sidebar-bg-start/end) trong index.css */}
       <style>{`
-        /* FIX (always-expanded): ép width cố định 260px, vô hiệu hoá hẳn
-           trạng thái thu gọn (68px) — không còn nút toggle nên không cần
-           lo class .collapsed nữa, nhưng ép !important cho chắc nếu còn
-           chỗ nào khác lỡ set width 68px. */
-        .sidebar { width: 260px !important; background: #0b1220 !important; }
-        .app-content { margin-left: 260px !important; }
+        /* Nút mũi tên mở lại Sidebar giờ dùng inline style + createPortal
+           render thẳng vào document.body (xem JSX phía trên component) —
+           không còn CSS class ở đây, tránh bị các rule !important khác
+           trong index.css ghi đè khiến nút "biến mất". */
+        /* FIX (push-not-overlay): Sidebar vẫn position:fixed + trượt bằng
+           transform (để có hiệu ứng mượt), nhưng .app-content giờ đẩy theo
+           đúng bề rộng Sidebar khi mở, không còn bị đè/che chữ nữa. Áp dụng
+           đồng nhất mọi kích thước màn hình. */
+        .sidebar {
+          position: fixed !important;
+          top: 0;
+          left: 0;
+          height: 100vh;
+          width: 210px !important;
+          background: #0b1220 !important;
+          transform: translateX(calc(-100% - 4px));
+          transition: transform 0.25s ease;
+          z-index: 1000;
+          box-shadow: 4px 0 24px rgba(0,0,0,0.45);
+        }
+        .sidebar.open {
+          transform: translateX(0) !important;
+        }
+        .app-content {
+          margin-left: 0 !important;
+          transition: margin-left 0.25s ease;
+        }
+        .sidebar.open + .app-content {
+          margin-left: 210px !important;
+        }
         .sidebar .sidebar-header {
           background: linear-gradient(90deg, #026466 0%, #026466 62%, #cfdc00 100%) !important;
           border-bottom: 1px solid rgba(0,0,0,0.15) !important;
           justify-content: center !important;
+          padding: 0 6px !important;
         }
         .sidebar .sidebar-item-index {
           background: rgb(220,216,0) !important;
           color: #1a1a1a !important;
+          width: 24px !important;
+          height: 24px !important;
+          min-width: 24px !important;
+          font-size: 12px !important;
         }
         .sidebar .sidebar-item.active .sidebar-item-index {
           background: rgb(220,216,0) !important;
@@ -56,11 +162,17 @@ export const Sidebar: React.FC = () => {
         }
         .sidebar .sidebar-item-label {
           color: #000000 !important;
-          font-size: 17.4px !important;
+          font-size: 15px !important;
           font-weight: 700 !important;
-          letter-spacing: 0.2px;
+          letter-spacing: 0.1px;
+          white-space: normal !important;
+          line-height: 1.2 !important;
         }
-        .sidebar .sidebar-item { border-left: none !important; }
+        .sidebar .sidebar-item {
+          border-left: none !important;
+          padding: 10px 8px !important;
+          gap: 8px !important;
+        }
         .sidebar .sidebar-item[data-idx="1"] { background: #008489 !important; }
         .sidebar .sidebar-item[data-idx="2"] { background: #009298 !important; }
         .sidebar .sidebar-item[data-idx="3"] { background: #00A6AD !important; }
@@ -74,9 +186,9 @@ export const Sidebar: React.FC = () => {
       `}</style>
 
       <div className="sidebar-header">
-        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '5px' }}>
-          <span style={{ fontWeight: 800, fontSize: '19px', color: '#ffffff', whiteSpace: 'nowrap' }}>PPC</span>
-          <span style={{ fontWeight: 800, fontSize: '19px', color: '#cfdc00', whiteSpace: 'nowrap' }}>TEAM</span>
+        <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '4px' }}>
+          <span style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff', whiteSpace: 'nowrap' }}>PPC</span>
+          <span style={{ fontWeight: 800, fontSize: '15px', color: '#cfdc00', whiteSpace: 'nowrap' }}>TEAM</span>
         </div>
       </div>
 
@@ -88,20 +200,22 @@ export const Sidebar: React.FC = () => {
               key={item.id}
               data-idx={item.index}
               className={`sidebar-item ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleSelectTab(item.id)}
             >
               <div className="sidebar-item-index">{item.index}</div>
               <span className="sidebar-item-label">{item.label}</span>
-              <div className="sidebar-item-dot" />
             </li>
           );
         })}
       </ul>
 
       {/* Chân Sidebar — chuyển nguyên 3 khối từ Header cũ sang: role
-          switcher, user badge hiện tại, nút Sáng/Tối. */}
+          switcher, user badge hiện tại, nút Sáng/Tối. FIX
+          (bottom-no-divider): theo yêu cầu người dùng, khối này quay lại
+          nằm sát đáy Sidebar (menu .sidebar-menu giữ flex:1 mặc định để tự
+          giãn, đẩy khối này xuống đáy) và bỏ hẳn đường kẻ phân cách
+          (borderTop) phía trên nó. */}
       <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.08)',
         padding: '12px',
         display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0,
       }}>
@@ -156,5 +270,6 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };

@@ -9,10 +9,18 @@ import React from 'react';
 // height:60px + boxSizing:'border-box' (giống hệt .sidebar-header) để 2 khối
 // bằng chiều cao nhau như trong ảnh yêu cầu, bỏ py-3 (padding dọc) để không
 // cộng dồn thêm chiều cao ngoài 60px đã ép.
+// FIX (single-toggle-button): trước đây Header có riêng 1 nút hamburger (☰)
+// để ẩn/hiện Sidebar, khiến người dùng thấy 2 nút toggle khác nhau ở 2 vị
+// trí khác nhau tuỳ trạng thái Sidebar (hamburger trong Header khi mở, tab
+// mũi tên vàng dính mép khi đóng) — gây cảm giác nút "nhảy chỗ". Theo yêu
+// cầu người dùng, đã GỘP LÀM 1 nút duy nhất (xem Sidebar.tsx — nút mũi tên
+// vàng luôn hiện, luôn ở đúng 1 vị trí cố định top-left, chỉ đổi hướng mũi
+// tên theo trạng thái). Vì vậy xoá hẳn nút + icon Menu + prop onMenuClick ở
+// đây, Header giờ không còn liên quan gì đến việc đóng/mở Sidebar nữa.
 export const Header: React.FC = () => {
   return (
     <header
-      className="bg-[#122842] dark:bg-[#0b1726] text-white shadow-md sticky top-0 z-40 px-4 border-b border-slate-700/50 transition-colors flex items-center"
+      className="bg-[#122842] dark:bg-[#0b1726] text-white shadow-md sticky top-0 z-40 px-4 border-b border-slate-700/50 transition-colors flex items-center relative"
       style={{ height: '60px', boxSizing: 'border-box' }}
     >
       <div className="max-w-7xl mx-auto w-full flex items-center justify-center gap-3">

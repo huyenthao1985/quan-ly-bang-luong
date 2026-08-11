@@ -37,10 +37,23 @@ const MainContent: React.FC = () => {
 
 const AppShell: React.FC = () => {
   const { theme } = usePayroll();
+  // FIX (toggle-all-screens): theo yêu cầu người dùng, Sidebar giờ ẩn/hiện
+  // được ở CẢ điện thoại lẫn laptop, không còn chỉ riêng mobile như trước.
+  // Mặc định: mở sẵn trên màn hình rộng (laptop/desktop, > 768px) để giữ
+  // trải nghiệm quen thuộc, đóng sẵn trên màn hình hẹp (điện thoại) để
+  // không che nội dung ngay khi tải trang — nhưng ở cả 2 trường hợp, nút
+  // hamburger trên Header đều bấm được để tự tay ẩn/hiện bất cứ lúc nào.
+  const [sidebarOpen, setSidebarOpen] = React.useState(
+    () => typeof window !== 'undefined' && window.innerWidth > 768
+  );
 
   return (
     <div data-theme={theme} className="app-layout">
-      <Sidebar />
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onOpen={() => setSidebarOpen(true)}
+      />
 
       {/* FIX (footer-stick-bottom): .app-content giờ là flex-column cao tối
           thiểu 100vh — cùng với flex:1 trên <main> ở trên và marginTop:'auto'
