@@ -38,6 +38,11 @@ interface PayrollContextType {
   // của currentUser, suy ra từ Employee gắn với currentUser.employeeId — không phải chọn tay.
   payrollViewPermissions: PayrollViewPermissions;
   viewerPosition: Position | undefined;
+  // EPCC (checkin-sets-viewer-identity) — id nhân viên vừa tự điểm danh gần nhất trên
+  // thiết bị/trình duyệt này. Dùng làm fallback để suy ra viewerPosition khi currentUser
+  // (role demo Admin/Leader/User) chưa gắn employeeId cụ thể — xem AttendanceTab.doSave().
+  lastCheckedInEmployeeId: string | undefined;
+  setLastCheckedInEmployeeId: (employeeId: string) => void;
   attendanceRecords: Record<string, EmployeeAttendanceRecord>; // key: `${employeeId}_${year}_${month}`
   currentUser: User;
   activeRole: UserRole;
@@ -106,6 +111,19 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return saved ? JSON.parse(saved) : buildDefaultPayrollViewPermissions();
   });
 
+  // EPCC (checkin-sets-viewer-identity) — nhớ nhân viên vừa tự điểm danh gần nhất TRÊN
+  // THIẾT BỊ NÀY (localStorage, không phải Supabase — đây là danh tính "ai đang cầm máy
+  // này", không phải dữ liệu chung của công ty). Dùng làm fallback cho viewerPosition khi
+  // chưa có hệ thống đăng nhập thật theo từng nhân viên.
+  const [lastCheckedInEmployeeId, setLastCheckedInEmployeeIdState] = useState<string | undefined>(() => {
+    return localStorage.getItem('payroll_last_checkin_employee_id') || undefined;
+  });
+
+  const setLastCheckedInEmployeeId = (employeeId: string) => {
+    setLastCheckedInEmployeeIdState(employeeId);
+    localStorage.setItem('payroll_last_checkin_employee_id', employeeId);
+  };
+
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, EmployeeAttendanceRecord>>(() => {
     const saved = localStorage.getItem('payroll_attendance');
     const raw: Record<string, EmployeeAttendanceRecord> = saved ? JSON.parse(saved) : {};
@@ -121,11 +139,13 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [activeRole, setActiveRole] = useState<UserRole>('Admin');
   const [currentUser, setCurrentUser] = useState<User>(SAMPLE_USERS[0]);
 
-  // EPCC (payroll-view-permission-matrix) — vị trí THẬT của người đang dùng app, lấy từ hồ
-  // sơ nhân viên gắn với currentUser.employeeId (KHÔNG phải activeRole thô). Nếu currentUser
-  // chưa gắn employeeId (vd tài khoản Admin thuần không phải nhân viên cụ thể) → undefined,
-  // PayslipTab sẽ hiện cảnh báo thay vì âm thầm không lọc được gì.
-  const viewerPosition = employees.find((e) => e.id === currentUser.employeeId)?.position;
+  // EPCC (checkin-sets-viewer-identity) — vị trí THẬT của người đang dùng app: ưu tiên
+  // hồ sơ gắn với currentUser.employeeId (nếu Admin đã cấu hình User/Leader mẫu có sẵn
+  // employeeId cụ thể); nếu chưa có, fallback sang employeeId của người VỪA TỰ ĐIỂM DANH
+  // gần nhất trên thiết bị này (lastCheckedInEmployeeId, set ở AttendanceTab.doSave()) —
+  // theo đúng yêu cầu "điểm danh xong thì mặc định ở vị trí đó".
+  const viewerEmployeeId = currentUser.employeeId || lastCheckedInEmployeeId;
+  const viewerPosition = employees.find((e) => e.id === viewerEmployeeId)?.position;
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('payroll_theme');
@@ -507,6 +527,8 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
         salaryConfig,
         payrollViewPermissions,
         viewerPosition,
+        lastCheckedInEmployeeId,
+        setLastCheckedInEmployeeId,
         attendanceRecords,
         currentUser,
         activeRole,

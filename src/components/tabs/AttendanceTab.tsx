@@ -261,6 +261,7 @@ export const AttendanceTab: React.FC = () => {
     selectedMonth, selectedYear,
     setSelectedMonth, setSelectedYear,
     updateAttendanceDay, showToast,
+    setLastCheckedInEmployeeId,
   } = usePayroll();
 
   const [viewMode, setViewMode] = useState<ViewMode>('manual');
@@ -529,6 +530,12 @@ export const AttendanceTab: React.FC = () => {
 
     const nm = employees.find(e => e.id === selEmpId)?.fullName;
     showToast(`Đã lưu điểm danh ngày ${pad2(eDay)}/${pad2(eMon)}/${eYr} cho ${nm}! HC=${hcH}h | OT=${otH + sunH + holH}h`);
+
+    // EPCC (checkin-sets-viewer-identity) — sau khi điểm danh xong, nhớ nhân viên này là
+    // người đang dùng thiết bị/trình duyệt này (localStorage, chỉ áp dụng cho máy này),
+    // để PayslipTab tự áp đúng quyền xem Bảng lương theo vị trí thật của họ mà không cần
+    // Admin phải cấu hình employeeId thủ công trong SAMPLE_USERS.
+    setLastCheckedInEmployeeId(selEmpId);
   };
 
   /** Khi đổi ca → tự động điền giờ mặc định phù hợp

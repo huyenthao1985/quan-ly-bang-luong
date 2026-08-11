@@ -83,15 +83,23 @@ export const PayslipTab: React.FC = () => {
 
   return (
     <div className="space-y-2">
-      {/* EPCC (payroll-view-permission-matrix) — cảnh báo nếu tài khoản Leader/User đang
-          test chưa gắn employeeId trong SAMPLE_USERS (data/initialData.ts), nên chưa xác
-          định được vị trí để áp dụng ma trận phân quyền. */}
+      {/* EPCC (checkin-sets-viewer-identity) — cảnh báo nếu chưa xác định được vị trí:
+          currentUser chưa gắn employeeId TRONG SAMPLE_USERS và trên thiết bị này cũng
+          chưa ai từng tự điểm danh ở AttendanceTab (lastCheckedInEmployeeId trống). */}
       {activeRole !== 'Admin' && !viewerPosition && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-xs rounded-lg p-2">
-          Tài khoản "{currentUser.name}" chưa được gắn với 1 hồ sơ nhân viên cụ thể (thiếu{' '}
-          <code>employeeId</code>), nên chưa xác định được vị trí để áp dụng phân quyền xem
-          Bảng lương. Vào Hồ sơ nhân viên / cấu hình tài khoản để gán <code>employeeId</code>{' '}
-          tương ứng.
+          Chưa xác định được vị trí của tài khoản "{currentUser.name}" để áp dụng phân quyền
+          xem Bảng lương. Hãy vào tab Điểm danh, chọn đúng tên mình và bấm "Lưu điểm danh" ít
+          nhất 1 lần trên thiết bị này — hệ thống sẽ tự ghi nhớ vị trí từ hồ sơ nhân viên đó.
+        </div>
+      )}
+
+      {/* Xác nhận đang xem với tư cách ai, để minh bạch lý do danh sách bị lọc */}
+      {activeRole !== 'Admin' && viewerPosition && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs rounded-lg p-2">
+          Đang xem với tư cách vị trí <strong>{viewerPosition}</strong> (theo hồ sơ nhân viên
+          gần nhất đã điểm danh trên thiết bị này) — chỉ thấy bảng lương của các vị trí được
+          phân quyền cho <strong>{viewerPosition}</strong> trong Cài đặt.
         </div>
       )}
 
