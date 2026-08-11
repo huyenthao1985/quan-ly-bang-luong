@@ -91,7 +91,7 @@ export function calculatePayslip(
   let holiday300Hours = 0;
   let leavePaidDays = 0;
   let leaveAnnualDays = 0;
-  let femaleSupportHours = attendanceRecord?.manualFemaleSupportHours ?? (employee.isFemale ? 1.5 : 0);
+  let femaleSupportHours = 0;
 
   const nightOt50Hours = attendanceRecord?.manualNightOt50Hours ?? 0;
   const nightOt60Hours = attendanceRecord?.manualNightOt60Hours ?? 0;
@@ -100,6 +100,7 @@ export function calculatePayslip(
   const minWageLeaveDays = attendanceRecord?.manualMinWageLeaveDays ?? 0;
 
   if (attendanceRecord && attendanceRecord.dailyRecords) {
+    let sumDailyFemale = 0;
     Object.values(attendanceRecord.dailyRecords).forEach((day) => {
       hcTotalHours += day.hcHours || 0;
       ot150Hours += day.otHours || 0;
@@ -108,8 +109,13 @@ export function calculatePayslip(
       holiday300Hours += day.holidayHours || 0;
       leavePaidDays += day.leavePaidDays || 0;
       leaveAnnualDays += day.leaveAnnualDays || 0;
-      femaleSupportHours += day.femaleSupportHours || 0;
+      sumDailyFemale += day.femaleSupportHours || 0;
     });
+    if (employee.isFemale) {
+      femaleSupportHours = attendanceRecord.manualFemaleSupportHours ?? (sumDailyFemale > 0 ? sumDailyFemale : 1.5);
+    }
+  } else if (employee.isFemale) {
+    femaleSupportHours = attendanceRecord?.manualFemaleSupportHours ?? 1.5;
   }
 
   // Days worked HC

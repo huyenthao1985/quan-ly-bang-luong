@@ -270,13 +270,18 @@ export const SettingsTab: React.FC = () => {
             {/* Nhập tay chấm công & phép theo NV/Tháng — nối liền dưới hệ số OT, gỡ tiêu đề dư thừa theo yêu cầu */}
             <div className="pt-1.5 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
               <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
-                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Trợ cấp phụ nữ (giờ)</span>
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">
+                  Trợ cấp phụ nữ (giờ) {!manualEmp?.isFemale && <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">(Nam: 0h)</span>}
+                </span>
                 <input
                   type="number"
                   step="0.5"
-                  value={manualFemaleHours}
-                  onChange={(e) => setManualFemaleHours(Number(e.target.value))}
-                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  disabled={!manualEmp?.isFemale}
+                  value={manualEmp?.isFemale ? manualFemaleHours : 0}
+                  onChange={(e) => manualEmp?.isFemale && setManualFemaleHours(Number(e.target.value))}
+                  className={`w-24 text-right px-1 py-0.5 text-xs border border-slate-300 dark:border-slate-700 rounded font-bold ${
+                    !manualEmp?.isFemale ? 'bg-slate-200/60 dark:bg-slate-800 text-slate-400 cursor-not-allowed' : 'bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200'
+                  }`}
                 />
               </div>
 
