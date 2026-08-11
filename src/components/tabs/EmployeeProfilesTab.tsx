@@ -41,14 +41,28 @@ export const EmployeeProfilesTab: React.FC = () => {
 
   const departments = ['ALL', ...Array.from(new Set(employees.map((e) => e.department)))];
 
-  const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch =
-      emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.id.includes(searchTerm) ||
-      emp.phone.includes(searchTerm);
-    const matchesDept = selectedDept === 'ALL' || emp.department === selectedDept;
-    return matchesSearch && matchesDept;
-  });
+  // EPCC (employee-list-sort-by-position) — sắp xếp danh sách theo VỊ TRÍ từ cao đến thấp
+  // (S. Manager > Manager > Senior Staff > Leader > Staff > OP), theo yêu cầu người dùng.
+  // Vị trí không nằm trong danh sách (dữ liệu cũ/lỗi) rơi xuống cuối thay vì gây lỗi sort.
+  const POSITION_RANK: Record<Position, number> = {
+    'S. Manager': 0,
+    'Manager': 1,
+    'Senior Staff': 2,
+    'Leader': 3,
+    'Staff': 4,
+    'OP': 5,
+  };
+
+  const filteredEmployees = employees
+    .filter((emp) => {
+      const matchesSearch =
+        emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        emp.id.includes(searchTerm) ||
+        emp.phone.includes(searchTerm);
+      const matchesDept = selectedDept === 'ALL' || emp.department === selectedDept;
+      return matchesSearch && matchesDept;
+    })
+    .sort((a, b) => (POSITION_RANK[a.position] ?? 99) - (POSITION_RANK[b.position] ?? 99));
 
   const handleOpenAddModal = () => {
     setEditingEmployee(null);
