@@ -112,9 +112,9 @@ function calcNightAllowance50(startDec: number, endDec: number): number {
  */
 function calcHcHours(startDec: number, endDec: number): number {
   if (endDec <= startDec) {
-    // Ca đêm: 8h đầu là HC hành chính, phần vượt 8h mới là OT ca đêm
+    // Ca đêm: 8h đầu là HC hành chính, tối đa 8h
     const total = calcOvernightTotal(startDec, endDec);
-    return Math.round(Math.min(total, 8) * 2) / 2;
+    return Math.min(total, 8);
   }
 
   // Morning session 08:00 – 12:00
@@ -126,8 +126,8 @@ function calcHcHours(startDec: number, endDec: number): number {
     Math.max(0, Math.min(endDec, wEnd) - Math.max(startDec, wStart));
 
   const total = overlapWith(mornStart, mornEnd) + overlapWith(aftStart, aftEnd);
-  // Round to nearest 0.5
-  return Math.round(total * 2) / 2;
+  // Giữ chính xác 2 chữ số thập phân (ví dụ 4.25h cho 11:45 AM, 4.5h cho 11:30 AM)
+  return Math.round(total * 100) / 100;
 }
 
 /**
@@ -798,9 +798,9 @@ export const AttendanceTab: React.FC = () => {
                 />
                 <div>
                   <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">HC (h)</label>
-                  <div className="h-[32px] px-2.5 bg-green-50 dark:bg-green-950/30 border border-green-400 dark:border-green-600 rounded-md text-green-800 dark:text-green-300 font-bold text-xs flex items-center justify-between">
-                    <span>{hcAuto.toFixed(1)}</span>
-                    <span className="text-[9px] font-normal text-green-600/70">(max 8h)</span>
+                  <div className="h-[32px] px-2 bg-green-50 dark:bg-green-950/30 border border-green-400 dark:border-green-600 rounded-md text-green-800 dark:text-green-300 font-bold text-xs flex items-center justify-between">
+                    <span>{hcAuto % 1 === 0 ? hcAuto.toFixed(1) : hcAuto}</span>
+                    <span className="text-[9px] font-normal text-green-600/70">(= {(hcAuto / 8).toFixed(3)} công)</span>
                   </div>
                 </div>
                 <div>
