@@ -105,10 +105,16 @@ function calcNightAllowance50(startDec: number, endDec: number): number {
 
 /**
  * Tính giờ HC hành chính theo 2 ca chính thức:
- *   Ca sáng : 08:00 – 12:00  (tối đa 4h)
- *   Ca chiều: 13:00 – 17:00  (tối đa 4h)
- * Bất kỳ thời gian ngoài 2 khung trên (kể cả 12-13h nghỉ trưa) đều KHÔNG được tính.
- * Riêng ca đêm (qua nửa đêm): 8h đầu tính là HC, phần dư tính OT (xem calcOtHours).
+ *   Ca sáng : 08:00 – 12:00 (tối đa 4h)
+ *   Ca chiều: 13:00 – 17:00 (tối đa 4h)
+ * Quy tắc:
+ *  - Số giờ làm việc trong từng ca phải tính từ 30 phút (0.5h) trở đi.
+ *  - Phần lẻ dưới 30 phút (ví dụ 15 phút từ 11:45–12:00) không đủ 30 phút nên không được tính vào ca đó.
+ * Cụ thể:
+ *  - Vào 11:45 AM -> Ca sáng 15p (< 30p) = 0h + Ca chiều 4h = 4.0h HC
+ *  - Vào 11:30 AM -> Ca sáng 30p (>= 30p) = 0.5h + Ca chiều 4h = 4.5h HC
+ *  - Vào 08:30 AM -> Ca sáng 3.5h + Ca chiều 4h = 7.5h HC
+ *  - Vào 13:00 PM -> Ca chiều 4h = 4.0h HC
  */
 function calcHcHours(startDec: number, endDec: number): number {
   if (endDec <= startDec) {
@@ -122,12 +128,13 @@ function calcHcHours(startDec: number, endDec: number): number {
   // Afternoon session 13:00 – 17:00
   const aftStart = 13, aftEnd = 17;
 
-  const overlapWith = (wStart: number, wEnd: number) =>
-    Math.max(0, Math.min(endDec, wEnd) - Math.max(startDec, wStart));
+  const getSessionHours = (wStart: number, wEnd: number) => {
+    const raw = Math.max(0, Math.min(endDec, wEnd) - Math.max(startDec, wStart));
+    if (raw < 0.5) return 0;
+    return Math.floor(raw * 2) / 2;
+  };
 
-  const total = overlapWith(mornStart, mornEnd) + overlapWith(aftStart, aftEnd);
-  // Giữ chính xác 2 chữ số thập phân (ví dụ 4.25h cho 11:45 AM, 4.5h cho 11:30 AM)
-  return Math.round(total * 100) / 100;
+  return getSessionHours(mornStart, mornEnd) + getSessionHours(aftStart, aftEnd);
 }
 
 /**
