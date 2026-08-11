@@ -267,11 +267,11 @@ export const SettingsTab: React.FC = () => {
               </div>
             ))}
 
-            {/* Nhập tay bổ sung theo NV/Tháng — đã chuyển sang cột TRÁI theo yêu cầu */}
+            {/* Nhập tay chấm công & phép theo NV/Tháng */}
             <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                Nhập Tay Bổ Sung (NV Đang Chọn)
+                Nhập Tay Chấm Công &amp; Phép (NV Đang Chọn)
               </h4>
 
               <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
@@ -296,45 +296,6 @@ export const SettingsTab: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
-                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Thuế TNCN (rống = tự tính)</span>
-                <div className="flex items-center gap-1">
-                  <FormattedNumberInput
-                    value={manualTax ? Number(manualTax) : 0}
-                    onChange={(v) => setManualTax(v === 0 ? '' : String(v))}
-                    placeholder={manualPayslip ? formatVND(manualPayslip.pitAutoCalculated) : ''}
-                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                  />
-                  {manualAttendanceRecord?.manualPersonalTax != null && (
-                    <button
-                      type="button"
-                      onClick={handleResetTaxToAuto}
-                      className="shrink-0 px-1 py-0.5 text-[9px] font-semibold text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40"
-                    >
-                      Tự động
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
-                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Truy thu BHYT</span>
-                <FormattedNumberInput
-                  value={manualArrears}
-                  onChange={(v) => setManualArrears(v)}
-                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
-                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Trừ khác</span>
-                <FormattedNumberInput
-                  value={manualOtherDeduction}
-                  onChange={(v) => setManualOtherDeduction(v)}
-                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
-                />
-              </div>
-
               <div className="flex items-center justify-between gap-2 py-0.5">
                 <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Số ngày nghỉ không phép</span>
                 <div className="flex items-center gap-1">
@@ -354,7 +315,7 @@ export const SettingsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Bảo hiểm + Thuế TNCN — tất cả ô nhập liệu đồng nhất w-24 */}
+          {/* Right: Bảo hiểm + Thuế TNCN + Khấu trừ nhập tay */}
           <div className="space-y-0.5 md:pl-6 pt-3 md:pt-0">
             <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
               <Shield className="w-3.5 h-3.5 text-emerald-600" />
@@ -370,7 +331,7 @@ export const SettingsTab: React.FC = () => {
                 onChange: (v: number) => setConfig({ ...config, bhtnRate: v / 100 }) },
               { label: `Đoàn phí Công đoàn (VNĐ) = ${formatVND(config.unionFeeFlat)}`, value: config.unionFeeFlat, isVnd: true,
                 onChange: (v: number) => setConfig({ ...config, unionFeeFlat: v }) },
-          ] as { label: string; value: number; onChange: (v: number) => void; isVnd?: boolean }[]).map(({ label, value, onChange, isVnd }) => (
+            ] as { label: string; value: number; onChange: (v: number) => void; isVnd?: boolean }[]).map(({ label, value, onChange, isVnd }) => (
               <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
                 <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">{label}</span>
                 {isVnd ? (
@@ -436,6 +397,53 @@ export const SettingsTab: React.FC = () => {
                   />
                   Miễn thuế Hỗ trợ tiếng
                 </label>
+              </div>
+            </div>
+
+            {/* Khấu trừ nhập tay theo NV/Tháng */}
+            <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
+                <Receipt className="w-3.5 h-3.5 text-rose-600" />
+                Khấu Trừ Nhập Tay (NV Đang Chọn)
+              </h4>
+
+              <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Thuế TNCN (để trống = tự tính)</span>
+                <div className="flex items-center gap-1">
+                  <FormattedNumberInput
+                    value={manualTax ? Number(manualTax) : 0}
+                    onChange={(v) => setManualTax(v === 0 ? '' : String(v))}
+                    placeholder={manualPayslip ? formatVND(manualPayslip.pitAutoCalculated) : ''}
+                    className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                  />
+                  {manualAttendanceRecord?.manualPersonalTax != null && (
+                    <button
+                      type="button"
+                      onClick={handleResetTaxToAuto}
+                      className="shrink-0 px-1 py-0.5 text-[9px] font-semibold text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700 rounded hover:bg-sky-50 dark:hover:bg-sky-950/40"
+                    >
+                      Tự động
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50">
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Truy thu BHYT</span>
+                <FormattedNumberInput
+                  value={manualArrears}
+                  onChange={(v) => setManualArrears(v)}
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-2 py-0.5">
+                <span className="text-[11px] text-slate-600 dark:text-slate-400 leading-tight">Trừ khác</span>
+                <FormattedNumberInput
+                  value={manualOtherDeduction}
+                  onChange={(v) => setManualOtherDeduction(v)}
+                  className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
+                />
               </div>
             </div>
           </div>
