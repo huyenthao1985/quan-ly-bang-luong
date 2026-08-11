@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
-  Calendar, Save, Search, User, Clock,
+  Calendar, Save, Search,
   ChevronDown, X, LayoutList, PencilLine, Edit3, Trash2,
 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
@@ -713,177 +713,136 @@ export const AttendanceTab: React.FC = () => {
         // chú ở div bọc ngoài phía trên).
         <div className="space-y-[2mm]">
           {/* Form cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* LEFT – chấm công */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-500" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                  📋 Thông tin chấm công
-                </h3>
+          {/* EPCC (merge-2-cards-into-1-mobile-friendly) - FIX theo yêu cầu
+              người dùng: trước đây có 2 card riêng "Thông tin chấm công"
+              (trái) / "Thông tin nhân viên" (phải) xếp cạnh nhau bằng
+              grid-cols-2 — trên mobile bị bóp chật, khó dùng. Đã GỘP toàn bộ
+              5 ô của card phải (Nhân viên, Ngày, Trạng thái, Ca làm, Ngày
+              đặc biệt) vào chung 1 card duy nhất với card trái, xếp theo cột
+              dọc — hợp lý hơn hẳn khi xem trên điện thoại. Đồng thời xoá hẳn
+              dòng tiêu đề chữ "Thông tin chấm công" theo yêu cầu người dùng
+              (không còn header bar trên cùng của card nữa). */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div className="p-4 space-y-4">
+              {/* Nhân viên + Ngày */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-red-500 mb-1">● Nhân viên</label>
+                  <div className="relative">
+                    <select value={selEmpId} onChange={e => setSelEmpId(e.target.value)}
+                      className={`w-full appearance-none pl-3 pr-7 py-2 text-xs border rounded-lg font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
+                        saveAttempted && !selEmpId
+                          ? 'border-red-500 ring-2 ring-red-300 dark:ring-red-800 text-slate-400'
+                          : selEmpId
+                            ? 'border-yellow-400 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-yellow-400'
+                            : 'border-yellow-300 text-slate-400 focus:ring-2 focus:ring-yellow-400'
+                      }`}>
+                      <option value="">Chọn nhân viên</option>
+                      {employees.map(e => (
+                        <option key={e.id} value={e.id}>[{e.id}] {e.fullName} – {e.department}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                  </div>
+                  {saveAttempted && !selEmpId && (
+                    <p className="mt-1 text-[10px] font-semibold text-red-500">⚠ Vui lòng chọn nhân viên trước khi lưu.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-red-500 mb-1">● Ngày</label>
+                  <input type="date"
+                    value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
+                    onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                </div>
               </div>
-              <div className="p-4 space-y-4">
-                {/* EPCC (status-shift-date-moved-to-employee-card) - FIX theo
-                    yêu cầu người dùng: hàng "Trạng thái / Ca làm / Ngày" đã
-                    CHUYỂN sang card "Thông tin nhân viên" bên phải (đặt phía
-                    trên "Nhân viên" / "Ngày đặc biệt"), không còn ở đây nữa. */}
-                <div className="grid grid-cols-2 gap-3">
-                  <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
-                  <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
-                </div>
-                {/* EPCC (equal-height-bold-border-3boxes) - FIX theo yêu cầu
-                    người dùng: 3 ô "HC (h)", "OT ngoài giờ (h)", "Loại OT/Phụ
-                    cấp" trước đây cao không đều (py-2.5 cho 2 ô đầu, py-2 +
-                    select mặc định cho ô 3) và viền mỏng (border 1px nhạt).
-                    Thêm items-stretch cho container + h-[42px] cố định cho cả
-                    3 ô, và đổi border -> border-2 với màu đậm hơn để viền rõ
-                    ràng hơn. */}
-                <div className="grid grid-cols-3 gap-3 items-stretch">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 mb-1">HC (h) – Hành chính</label>
-                    <div className="h-[42px] px-4 bg-green-50 dark:bg-green-950/30 border-2 border-green-400 dark:border-green-600 rounded-lg text-green-800 dark:text-green-300 font-bold text-sm flex items-center justify-between">
-                      <span>{hcAuto.toFixed(1)}</span>
-                      <span className="text-[10px] font-normal text-green-600/70">(tối đa 8h)</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-amber-600 mb-1">
-                      {shift === 'night' ? '🌙 Ca đêm (h)' : '⏰ OT ngoài giờ (h)'}
-                    </label>
-                    <div className={`h-[42px] px-4 rounded-lg font-bold text-sm flex items-center justify-between border-2 ${
-                      otAuto > 0
-                        ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300'
-                        : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
-                    }`}>
-                      <span>{otAuto.toFixed(1)}</span>
-                      {otAuto > 0 && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
-                          {shift === 'night' ? 'Ca đêm' : 'OT'}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-500 mb-1">Loại OT / Phụ cấp</label>
-                    <div className="relative">
-                      <select
-                        value={otType}
-                        onChange={e => setOtType(e.target.value as OtType)}
-                        className="w-full h-[42px] appearance-none pl-3 pr-7 text-xs rounded-lg font-semibold cursor-pointer focus:outline-none focus:ring-2 border-2 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
-                      >
-                        {OT_OPTIONS.map(o => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
 
-                {/* EPCC (swap-cancel-save-red) - FIX theo yêu cầu người
-                    dùng: đổi vị trí 2 nút (Hủy đứng trước, Lưu đứng sau) và
-                    đổi màu nút "Hủy" từ xám (bg-slate-100) sang đỏ nhạt
-                    (bg-red-50/border-red-200/text-red-600) để phân biệt rõ
-                    hành động hủy bỏ. */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <button onClick={doCancel}
-                    className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 font-bold text-sm py-3 rounded-xl shadow-sm transition-all cursor-pointer active:scale-95">
-                    <X className="w-4 h-4" />✕ Hủy
-                  </button>
-                  <button onClick={doSave}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-all cursor-pointer">
-                    <Save className="w-4 h-4" />💾 Lưu
-                  </button>
-                </div>
+              {/* Trạng thái + Ca làm + Ngày đặc biệt */}
+              <div className="grid grid-cols-3 gap-3">
+                <SelectRow
+                  label="Trạng thái" required
+                  value={status} onChange={v => setStatus(v as AttendanceStatus)}
+                  options={STATUS_OPTIONS}
+                  rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
+                  style={{ color: statusColor }}
+                />
+                <SelectRow
+                  label="Ca làm" required value={shift} onChange={v => onShiftChange(v as ShiftType)}
+                  options={SHIFT_OPTIONS}
+                  rowCls="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-slate-800 dark:text-slate-100 focus:ring-yellow-400"
+                />
+                <SelectRow
+                  label="Ngày đặc biệt" value={specialDay} onChange={v => setSpecialDay(v as SpecialDay)}
+                  options={SPECIAL_OPTIONS}
+                  rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
+                />
               </div>
-            </div>
 
-            {/* RIGHT – nhân viên */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border-2 border-purple-300 dark:border-purple-700 shadow-sm overflow-hidden">
-              <div className="px-4 py-2.5 bg-purple-50 dark:bg-purple-950/40 border-b border-purple-200 dark:border-purple-700 flex items-center gap-2">
-                <User className="w-4 h-4 text-purple-600" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
-                  👤 Thông tin nhân viên
-                </h3>
+              {/* Giờ bắt đầu / kết thúc */}
+              <div className="grid grid-cols-2 gap-3">
+                <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
+                <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
               </div>
-              <div className="p-4 space-y-3">
-                {/* EPCC (swap-employee-row-above-status-row) - FIX theo yêu
-                    cầu người dùng: đổi chỗ 2 hàng trong card "Thông tin nhân
-                    viên" — hàng "Nhân viên" / "Ngày đặc biệt" chuyển lên
-                    trên, hàng "Trạng thái" / "Ca làm" / "Ngày" chuyển xuống
-                    dưới (trước đây ngược lại). */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Employee picker */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-red-500 mb-1">● Nhân viên</label>
-                    <div className="relative">
-                      <select value={selEmpId} onChange={e => setSelEmpId(e.target.value)}
-                        className={`w-full appearance-none pl-3 pr-7 py-2 text-xs border rounded-lg font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
-                          saveAttempted && !selEmpId
-                            ? 'border-red-500 ring-2 ring-red-300 dark:ring-red-800 text-slate-400'
-                            : selEmpId
-                              ? 'border-yellow-400 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-yellow-400'
-                              : 'border-yellow-300 text-slate-400 focus:ring-2 focus:ring-yellow-400'
-                        }`}>
-                        <option value="">Chọn nhân viên</option>
-                        {employees.map(e => (
-                          <option key={e.id} value={e.id}>[{e.id}] {e.fullName} – {e.department}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-2.5 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                    </div>
-                    {saveAttempted && !selEmpId && (
-                      <p className="mt-1 text-[10px] font-semibold text-red-500">⚠ Vui lòng chọn nhân viên trước khi lưu.</p>
+
+              {/* HC / OT ngoài giờ / Loại OT-Phụ cấp */}
+              <div className="grid grid-cols-3 gap-3 items-stretch">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">HC (h) – Hành chính</label>
+                  <div className="h-[42px] px-4 bg-green-50 dark:bg-green-950/30 border-2 border-green-400 dark:border-green-600 rounded-lg text-green-800 dark:text-green-300 font-bold text-sm flex items-center justify-between">
+                    <span>{hcAuto.toFixed(1)}</span>
+                    <span className="text-[10px] font-normal text-green-600/70">(tối đa 8h)</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-amber-600 mb-1">
+                    {shift === 'night' ? '🌙 Ca đêm (h)' : '⏰ OT ngoài giờ (h)'}
+                  </label>
+                  <div className={`h-[42px] px-4 rounded-lg font-bold text-sm flex items-center justify-between border-2 ${
+                    otAuto > 0
+                      ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300'
+                      : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
+                  }`}>
+                    <span>{otAuto.toFixed(1)}</span>
+                    {otAuto > 0 && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
+                        {shift === 'night' ? 'Ca đêm' : 'OT'}
+                      </span>
                     )}
                   </div>
-                  {/* EPCC (shift-between-status-date) - field "Ca làm" đã
-                      chuyển sang card "Thông tin chấm công" (giữa Trạng thái
-                      và Ngày), không lặp lại ở đây nữa. */}
-                  {/* EPCC (ot-type-next-to-ot-hours) - field "Loại OT / Phụ
-                      cấp" đã chuyển sang card "Thông tin chấm công" (cạnh ô
-                      "OT ngoài giờ"), không lặp lại ở đây nữa. */}
-                  {/* EPCC (swap-ngay-with-ngaydacbiet) - FIX theo yêu cầu
-                      người dùng: đổi chỗ "Ngày đặc biệt" và "Ngày" cho
-                      nhau — "Ngày" chuyển lên hàng trên (cạnh "Nhân
-                      viên"), "Ngày đặc biệt" chuyển xuống hàng dưới (cạnh
-                      "Trạng thái" / "Ca làm"). */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-red-500 mb-1">● Ngày</label>
-                    <input type="date"
-                      value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
-                      onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
-                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Loại OT / Phụ cấp</label>
+                  <div className="relative">
+                    <select
+                      value={otType}
+                      onChange={e => setOtType(e.target.value as OtType)}
+                      className="w-full h-[42px] appearance-none pl-3 pr-7 text-xs rounded-lg font-semibold cursor-pointer focus:outline-none focus:ring-2 border-2 bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
+                    >
+                      {OT_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <SelectRow
-                    label="Trạng thái" required
-                    value={status} onChange={v => setStatus(v as AttendanceStatus)}
-                    options={STATUS_OPTIONS}
-                    rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
-                    style={{ color: statusColor }}
-                  />
-                  <SelectRow
-                    label="Ca làm" required value={shift} onChange={v => onShiftChange(v as ShiftType)}
-                    options={SHIFT_OPTIONS}
-                    rowCls="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-slate-800 dark:text-slate-100 focus:ring-yellow-400"
-                  />
-                  <SelectRow
-                    label="Ngày đặc biệt" value={specialDay} onChange={v => setSpecialDay(v as SpecialDay)}
-                    options={SPECIAL_OPTIONS}
-                    rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
-                  />
-                </div>
+              {/* Tổng hợp HC / OT */}
+              <div className="flex gap-3 pt-1">
+                <StatBadge label="HC" value={`${stats.hc.toFixed(1)} h`} color="#3b82f6" />
+                <StatBadge label="OT" value={`${stats.ot.toFixed(1)} h`} color="#22c55e" />
+              </div>
 
-                {/* Summary stats — chuyển vào trong card "Thông tin nhân viên" */}
-                {/* EPCC (remove-total-statbadge) - FIX theo yêu cầu người
-                    dùng: xóa hẳn badge "Tổng cộng" (33.0 h) — chỉ giữ lại
-                    HC và OT. */}
-                <div className="flex gap-3 pt-1">
-                  <StatBadge label="HC" value={`${stats.hc.toFixed(1)} h`} color="#3b82f6" />
-                  <StatBadge label="OT" value={`${stats.ot.toFixed(1)} h`} color="#22c55e" />
-                </div>
+              {/* Hủy / Lưu */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <button onClick={doCancel}
+                  className="flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/30 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 font-bold text-sm py-3 rounded-xl shadow-sm transition-all cursor-pointer active:scale-95">
+                  <X className="w-4 h-4" />✕ Hủy
+                </button>
+                <button onClick={doSave}
+                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-all cursor-pointer">
+                  <Save className="w-4 h-4" />💾 Lưu
+                </button>
               </div>
             </div>
           </div>
