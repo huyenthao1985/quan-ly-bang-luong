@@ -260,3 +260,25 @@ export interface CalculatedPayslip {
 
   netSalary: number; // THỰC LĨNH — D52
 }
+
+// EPCC (payroll-view-permission-matrix) — phân quyền XEM Bảng lương theo cấp bậc: chỉ
+// Admin được cấu hình vị trí nào xem được bảng lương của vị trí nào. Vị trí của người
+// đang xem được suy ra từ hồ sơ nhân viên gắn với currentUser (User.employeeId), KHÔNG
+// dùng role thô Admin/Leader/User để quyết định trực tiếp — đúng theo yêu cầu "dựa theo
+// hồ sơ nhân viên".
+export const POSITION_HIERARCHY: Position[] = [
+  'S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP',
+];
+
+// key: vị trí người XEM | value: danh sách vị trí họ được phép xem bảng lương
+export type PayrollViewPermissions = Record<Position, Position[]>;
+
+// Mặc định: mỗi vị trí xem được chính mình + các vị trí thấp hơn (S. Manager thấy tất cả,
+// OP chỉ thấy chính OP). Admin có thể sửa lại tuỳ ý ở SettingsTab.
+export function buildDefaultPayrollViewPermissions(): PayrollViewPermissions {
+  const result = {} as PayrollViewPermissions;
+  POSITION_HIERARCHY.forEach((viewerPos, idx) => {
+    result[viewerPos] = POSITION_HIERARCHY.slice(idx);
+  });
+  return result;
+}

@@ -15,10 +15,36 @@ export const PayslipTab: React.FC = () => {
     setSelectedYear,
     updateEmployee,
     showToast,
+    activeRole,
+    currentUser,
+    payrollViewPermissions,
+    viewerPosition,
   } = usePayroll();
 
   const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || '11704029');
   const printRef = useRef<HTMLDivElement>(null);
+
+  // EPCC (payroll-view-permission-matrix) — FIX: dropdown "Nhân viên" trước đây show TẤT
+  // CẢ nhân viên không lọc gì (ai cũng xem được lương bất kỳ ai). Giờ lọc theo hồ sơ nhân
+  // viên gắn với currentUser (viewerPosition, suy ra từ currentUser.employeeId trong
+  // PayrollContext) đối chiếu ma trận payrollViewPermissions; Admin luôn xem được toàn bộ,
+  // không giới hạn.
+  const allowedPositions = activeRole === 'Admin'
+    ? undefined
+    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []);
+
+  const visibleEmployees = allowedPositions
+    ? employees.filter((emp) => allowedPositions.includes(emp.position))
+    : employees;
+
+  // Nếu nhân viên đang chọn bị lọc mất quyền xem (vd đổi activeRole để test), tự chuyển
+  // về nhân viên đầu tiên hợp lệ trong danh sách được phép xem.
+  useEffect(() => {
+    if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
+      setSelectedEmpId(visibleEmployees[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRole, viewerPosition]);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId) || employees[0];
 
@@ -57,6 +83,18 @@ export const PayslipTab: React.FC = () => {
 
   return (
     <div className="space-y-2">
+      {/* EPCC (payroll-view-permission-matrix) — cảnh báo nếu tài khoản Leader/User đang
+          test chưa gắn employeeId trong SAMPLE_USERS (data/initialData.ts), nên chưa xác
+          định được vị trí để áp dụng ma trận phân quyền. */}
+      {activeRole !== 'Admin' && !viewerPosition && (
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 text-xs rounded-lg p-2">
+          Tài khoản "{currentUser.name}" chưa được gắn với 1 hồ sơ nhân viên cụ thể (thiếu{' '}
+          <code>employeeId</code>), nên chưa xác định được vị trí để áp dụng phân quyền xem
+          Bảng lương. Vào Hồ sơ nhân viên / cấu hình tài khoản để gán <code>employeeId</code>{' '}
+          tương ứng.
+        </div>
+      )}
+
       {/* Top Filter Bar matching screenshot 3 */}
       <div className="bg-white dark:bg-slate-800 p-2 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
         <div>
@@ -68,7 +106,7 @@ export const PayslipTab: React.FC = () => {
             onChange={(e) => setSelectedEmpId(e.target.value)}
             className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-[260px] cursor-pointer"
           >
-            {employees.map((emp) => (
+            {visibleEmployees.map((emp) => (
               <option key={emp.id} value={emp.id}>
                 {emp.id} - {emp.fullName}
               </option>

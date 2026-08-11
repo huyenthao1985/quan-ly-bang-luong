@@ -9,6 +9,8 @@ export const SettingsTab: React.FC = () => {
   const {
     salaryConfig,
     updateSalaryConfig,
+    payrollViewPermissions,
+    updatePayrollViewPermissions,
     activeRole,
     showToast,
     employees,
@@ -21,6 +23,11 @@ export const SettingsTab: React.FC = () => {
   } = usePayroll();
 
   const [config, setConfig] = useState<SalaryConfig>({ ...salaryConfig });
+
+  // EPCC (payroll-view-permission-matrix) — state cục bộ cho ma trận phân quyền xem Bảng
+  // lương, chỉ thực sự lưu khi bấm "Lưu tất cả cấu hình" (gộp vào handleSave bên dưới),
+  // theo đúng tinh thần "1 nút Lưu duy nhất" đã áp dụng cho cả config lẫn manual overrides.
+  const [permMatrix, setPermMatrix] = useState(payrollViewPermissions);
 
   const positions: Position[] = ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP'];
 
@@ -85,6 +92,22 @@ export const SettingsTab: React.FC = () => {
   const fmtNum = (n: number) => (n || 0).toLocaleString('en-US');
   const parseNum = (s: string) => Number(s.replace(/[^0-9]/g, '')) || 0;
 
+  // EPCC (payroll-view-permission-matrix) — chỉ Admin được tick, theo đúng pattern
+  // `activeRole === 'User'` chặn quyền đã dùng cho các control khác trong file này.
+  const togglePermission = (viewerPos: Position, targetPos: Position) => {
+    if (activeRole !== 'Admin') {
+      showToast('Chỉ Admin mới có quyền phân quyền xem Bảng lương!', 'error');
+      return;
+    }
+    setPermMatrix((prev) => {
+      const current = prev[viewerPos] || [];
+      const nextForViewer = current.includes(targetPos)
+        ? current.filter((p) => p !== targetPos)
+        : [...current, targetPos];
+      return { ...prev, [viewerPos]: nextForViewer };
+    });
+  };
+
   // EPCC (single-save-button) — FIX ROOT CAUSE "2 nút Lưu riêng biệt (Lưu tất cả cấu hình /
   // Lưu các khoản nhập tay) gây rối, người dùng không rõ bấm nút nào để lưu cái gì": theo
   // yêu cầu, gộp việc lưu "Nhập tay bổ sung theo nhân viên/tháng" vào chung `handleSave` —
@@ -97,6 +120,7 @@ export const SettingsTab: React.FC = () => {
       return;
     }
     updateSalaryConfig(config);
+    updatePayrollViewPermissions(permMatrix);
     updateAttendanceManualOverrides(manualEmpId, {
       manualFemaleSupportHours: manualFemaleHours,
       manualTransferredAnnualLeave: manualTransferredLeave,
@@ -637,6 +661,63 @@ export const SettingsTab: React.FC = () => {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* EPCC (payroll-view-permission-matrix) — card ma trận phân quyền xem Bảng lương
+          theo vị trí, chỉ Admin sửa được (checkbox disabled cho Leader/User). */}
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-2 mb-3">
+          <Shield className="w-4 h-4 text-blue-600" />
+          <h3 className="font-bold text-slate-800 dark:text-slate-100">
+            Phân quyền xem Bảng lương theo vị trí
+          </h3>
+          {activeRole !== 'Admin' && (
+            <span className="text-xs text-amber-600 ml-2">
+              (Chỉ Admin được sửa — bạn đang ở chế độ xem)
+            </span>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                {/* EPCC (perm-matrix-dark-text-invisible) - FIX ROOT CAUSE "tiêu đề cột/tên
+                    vị trí nhìn như trống ở theme dark": <th>/<td> chưa set màu chữ nên rơi
+                    về mặc định của trình duyệt, gần như không đọc được trên nền tối
+                    (bg-slate-900). Thêm text-slate-700 dark:text-slate-200 giống các bảng
+                    khác trong file này (vd bảng "Cấu hình phụ cấp theo vị trí"). */}
+                <th className="text-left p-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                  Vị trí đang xem ↓ / Được xem →
+                </th>
+                {positions.map((p) => (
+                  <th key={p} className="p-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-200">
+                    {p}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {positions.map((viewerPos) => (
+                <tr key={viewerPos}>
+                  <td className="p-2 border border-slate-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-200">
+                    {viewerPos}
+                  </td>
+                  {positions.map((targetPos) => (
+                    <td key={targetPos} className="p-2 border border-slate-200 dark:border-slate-700 text-center">
+                      <input
+                        type="checkbox"
+                        checked={permMatrix[viewerPos]?.includes(targetPos) ?? false}
+                        onChange={() => togglePermission(viewerPos, targetPos)}
+                        disabled={activeRole !== 'Admin'}
+                        className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </form>
   );

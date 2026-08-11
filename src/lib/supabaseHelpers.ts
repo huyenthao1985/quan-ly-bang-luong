@@ -4,7 +4,7 @@
  * CRUD helpers cho employees, attendance_records, salary_config.
  */
 
-import { Employee, EmployeeAttendanceRecord, SalaryConfig } from '../types/payroll';
+import { Employee, EmployeeAttendanceRecord, SalaryConfig, PayrollViewPermissions } from '../types/payroll';
 import { supabase } from './supabase';
 
 // ─────────────────────────────────────────────────────────────
@@ -179,4 +179,28 @@ export async function upsertSalaryConfig(config: SalaryConfig): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from('salary_config').upsert({ id: 1, config }, { onConflict: 'id' });
   if (error) console.error('[Supabase] upsertSalaryConfig:', error.message);
+}
+
+// EPCC (payroll-view-permission-matrix) — lưu ma trận phân quyền xem Bảng lương theo cùng
+// pattern bảng "1 dòng duy nhất chứa JSON" như salary_config ở trên (id cố định = 1), chỉ
+// khác tên bảng `payroll_view_permissions`. Cần tạo bảng này trong Supabase với cấu trúc:
+// id (int, PK) | permissions (jsonb) — tương tự salary_config (id | config).
+
+/** Fetch ma trận phân quyền xem Bảng lương */
+export async function fetchPayrollViewPermissions(): Promise<PayrollViewPermissions | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('payroll_view_permissions').select('permissions').eq('id', 1).single();
+  if (error) {
+    if (error.code === 'PGRST116') return null; // No rows
+    console.error('[Supabase] fetchPayrollViewPermissions:', error.message);
+    return null;
+  }
+  return data?.permissions as PayrollViewPermissions ?? null;
+}
+
+/** Upsert ma trận phân quyền xem Bảng lương */
+export async function upsertPayrollViewPermissions(permissions: PayrollViewPermissions): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from('payroll_view_permissions').upsert({ id: 1, permissions }, { onConflict: 'id' });
+  if (error) console.error('[Supabase] upsertPayrollViewPermissions:', error.message);
 }

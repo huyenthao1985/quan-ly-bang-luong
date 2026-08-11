@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { INITIAL_EMPLOYEES, INITIAL_SALARY_CONFIG, SAMPLE_USERS } from '../data/initialData';
-import { Employee, EmployeeAttendanceRecord, SalaryConfig, User, UserRole } from '../types/payroll';
+import {
+  Employee,
+  EmployeeAttendanceRecord,
+  SalaryConfig,
+  User,
+  UserRole,
+  Position,
+  PayrollViewPermissions,
+  buildDefaultPayrollViewPermissions,
+} from '../types/payroll';
 import { isSupabaseEnabled } from '../lib/supabase';
 import {
   fetchEmployees,
@@ -11,6 +20,8 @@ import {
   deleteEmployeeFromDb,
   upsertAttendanceRecord,
   upsertSalaryConfig,
+  fetchPayrollViewPermissions,
+  upsertPayrollViewPermissions,
 } from '../lib/supabaseHelpers';
 
 interface ToastMessage {
@@ -22,6 +33,11 @@ interface ToastMessage {
 interface PayrollContextType {
   employees: Employee[];
   salaryConfig: SalaryConfig;
+  // EPCC (payroll-view-permission-matrix) — ma trận phân quyền xem Bảng lương theo vị trí,
+  // chỉ Admin được sửa (xem updatePayrollViewPermissions). viewerPosition là vị trí THẬT
+  // của currentUser, suy ra từ Employee gắn với currentUser.employeeId — không phải chọn tay.
+  payrollViewPermissions: PayrollViewPermissions;
+  viewerPosition: Position | undefined;
   attendanceRecords: Record<string, EmployeeAttendanceRecord>; // key: `${employeeId}_${year}_${month}`
   currentUser: User;
   activeRole: UserRole;
@@ -61,6 +77,7 @@ interface PayrollContextType {
 
   // Configs
   updateSalaryConfig: (newConfig: SalaryConfig) => void;
+  updatePayrollViewPermissions: (next: PayrollViewPermissions) => void;
 
   // Toasts
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -82,6 +99,13 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return saved ? JSON.parse(saved) : INITIAL_SALARY_CONFIG;
   });
 
+  // EPCC (payroll-view-permission-matrix) — state ma trận phân quyền xem Bảng lương, theo
+  // đúng pattern khởi tạo từ localStorage như salaryConfig ở trên.
+  const [payrollViewPermissions, setPayrollViewPermissions] = useState<PayrollViewPermissions>(() => {
+    const saved = localStorage.getItem('payroll_view_permissions');
+    return saved ? JSON.parse(saved) : buildDefaultPayrollViewPermissions();
+  });
+
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, EmployeeAttendanceRecord>>(() => {
     const saved = localStorage.getItem('payroll_attendance');
     const raw: Record<string, EmployeeAttendanceRecord> = saved ? JSON.parse(saved) : {};
@@ -96,6 +120,12 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const [activeRole, setActiveRole] = useState<UserRole>('Admin');
   const [currentUser, setCurrentUser] = useState<User>(SAMPLE_USERS[0]);
+
+  // EPCC (payroll-view-permission-matrix) — vị trí THẬT của người đang dùng app, lấy từ hồ
+  // sơ nhân viên gắn với currentUser.employeeId (KHÔNG phải activeRole thô). Nếu currentUser
+  // chưa gắn employeeId (vd tài khoản Admin thuần không phải nhân viên cụ thể) → undefined,
+  // PayslipTab sẽ hiện cảnh báo thay vì âm thầm không lọc được gì.
+  const viewerPosition = employees.find((e) => e.id === currentUser.employeeId)?.position;
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('payroll_theme');
@@ -124,10 +154,11 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const loadFromSupabase = async () => {
       setIsDbLoading(true);
       try {
-        const [remoteEmployees, remoteAttendance, remoteConfig] = await Promise.all([
+        const [remoteEmployees, remoteAttendance, remoteConfig, remotePermissions] = await Promise.all([
           fetchEmployees(),
           fetchAttendanceRecords(),
           fetchSalaryConfig(),
+          fetchPayrollViewPermissions(),
         ]);
 
         // Employees: nếu Supabase trống → seed từ localStorage (migration lần đầu)
@@ -165,6 +196,15 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
           await upsertSalaryConfig(salaryConfig);
           console.info('[Supabase] Đã migrate salaryConfig từ localStorage lên cloud.');
         }
+
+        // EPCC (payroll-view-permission-matrix) — phân quyền xem Bảng lương: nếu Supabase
+        // trống → migrate từ localStorage, theo đúng pattern salaryConfig ở trên.
+        if (remotePermissions !== null) {
+          setPayrollViewPermissions(remotePermissions);
+        } else {
+          await upsertPayrollViewPermissions(payrollViewPermissions);
+          console.info('[Supabase] Đã migrate payrollViewPermissions từ localStorage lên cloud.');
+        }
       } catch (err) {
         console.error('[Supabase] Lỗi khi load dữ liệu, dùng localStorage fallback:', err);
       } finally {
@@ -185,6 +225,10 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     localStorage.setItem('payroll_config', JSON.stringify(salaryConfig));
   }, [salaryConfig]);
+
+  useEffect(() => {
+    localStorage.setItem('payroll_view_permissions', JSON.stringify(payrollViewPermissions));
+  }, [payrollViewPermissions]);
 
   useEffect(() => {
     localStorage.setItem('payroll_attendance', JSON.stringify(attendanceRecords));
@@ -209,6 +253,11 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!isDbLoaded || !isSupabaseEnabled) return;
     upsertSalaryConfig(salaryConfig);
   }, [salaryConfig, isDbLoaded]);
+
+  useEffect(() => {
+    if (!isDbLoaded || !isSupabaseEnabled) return;
+    upsertPayrollViewPermissions(payrollViewPermissions);
+  }, [payrollViewPermissions, isDbLoaded]);
 
   // Sync attendance theo key đã thay đổi (hiệu quả hơn upsert toàn bộ)
   useEffect(() => {
@@ -445,11 +494,19 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast('Đã lưu cấu hình phụ cấp và các tham số tính lương!');
   };
 
+  // EPCC (payroll-view-permission-matrix) — lưu ma trận phân quyền xem Bảng lương theo vị trí
+  const updatePayrollViewPermissions = (next: PayrollViewPermissions) => {
+    setPayrollViewPermissions(next);
+    showToast('Đã lưu phân quyền xem Bảng lương theo vị trí!');
+  };
+
   return (
     <PayrollContext.Provider
       value={{
         employees,
         salaryConfig,
+        payrollViewPermissions,
+        viewerPosition,
         attendanceRecords,
         currentUser,
         activeRole,
@@ -477,6 +534,7 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
         quickFillAttendanceMonth,
 
         updateSalaryConfig,
+        updatePayrollViewPermissions,
 
         showToast,
         removeToast,
