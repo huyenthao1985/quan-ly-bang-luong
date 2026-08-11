@@ -841,18 +841,6 @@ export const AttendanceTab: React.FC = () => {
 
           {/* Recent records table */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
-              <LayoutList className="w-4 h-4 text-slate-500" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                📋 Danh sách điểm danh gần đây
-              </h3>
-              {/* EPCC (cannot-confirm-deploy) - FIX ROOT CAUSE "không biết bản sửa đã thực sự chạy hay chưa":
-                  Badge này CHỈ có trong bản đã fix inline-edit. Nếu không thấy badge này trên UI thật,
-                  nghĩa là file đang chạy vẫn là bản cũ, chưa được build/deploy lại. */}
-              <span className="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
-                build: inline-edit-v2
-              </span>
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 {/* EPCC (date-first-no-stt) - FIX theo yêu cầu người dùng:
