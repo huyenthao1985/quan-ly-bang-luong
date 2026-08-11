@@ -155,6 +155,23 @@ export const SettingsTab: React.FC = () => {
     showToast('Đã tự động lưu cấu hình phụ cấp!');
   };
 
+  const handleClearAllowances = () => {
+    if (activeRole === 'User') return;
+    const emptyAllowances: Record<Position, PositionAllowanceConfig> = {
+      'S. Manager': { position: 'S. Manager', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+      'Manager': { position: 'Manager', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+      'Senior Staff': { position: 'Senior Staff', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+      'Leader': { position: 'Leader', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+      'Staff': { position: 'Staff', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+      'OP': { position: 'OP', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
+    };
+    const nextConfig = { ...config, positionAllowances: emptyAllowances };
+    setConfig(nextConfig);
+    configRef.current = nextConfig;
+    updateSalaryConfig(nextConfig);
+    showToast('Đã xóa toàn bộ phụ cấp mặc định! Bạn có thể tự điền 1 lần rồi lưu lại.');
+  };
+
   return (
     <form onSubmit={handleSave} className="space-y-[2mm]">
       {/* EPCC (unify-settings-cards-into-one) — FIX ROOT CAUSE "3 card (header, nhập tay bổ
@@ -452,10 +469,21 @@ export const SettingsTab: React.FC = () => {
 
       {/* Position Allowances Table */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto p-5">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Award className="w-4 h-4 text-purple-600" />
-          Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh (S. Manager, Manager, Senior Staff, Leader, Staff, OP)
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+            <Award className="w-4 h-4 text-purple-600" />
+            Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh (S. Manager, Manager, Senior Staff, Leader, Staff, OP)
+          </h3>
+          {activeRole !== 'User' && (
+            <button
+              type="button"
+              onClick={handleClearAllowances}
+              className="shrink-0 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+            >
+              Xóa toàn bộ phụ cấp (Về 0)
+            </button>
+          )}
+        </div>
 
         <table className="w-full text-xs text-left border-collapse table-fixed">
           <thead className="bg-[#122842] text-white uppercase text-[11.5px] font-bold">
