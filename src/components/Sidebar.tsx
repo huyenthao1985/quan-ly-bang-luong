@@ -1,8 +1,14 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Sun, Moon, Shield, UserCheck, Users, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Sun, Moon, Shield, UserCheck, Users, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
 import { usePayroll } from '../context/PayrollContext';
 import { UserRole } from '../types/payroll';
+// EPCC (payroll-simple-role-gate) — canAccessTab/ROLE_LABEL đến từ đăng
+// nhập THẬT (lib/auth.ts), khác UserRole('Admin'|'Leader'|'User') phía trên
+// vốn là role giả lập — Sidebar dùng canAccessTab để ẨN mục "BẢNG LƯƠNG"
+// khỏi menu nếu authRole không phải Manager (phòng vệ kép, cùng với gate
+// chính ở MainContent trong App.tsx).
+import { canAccessTab, ROLE_LABEL } from '../lib/auth';
 
 // EPCC (move-controls-to-sidebar) — hợp lý hoá theo yêu cầu người dùng: 3
 // khối "Quyền / User badge / Theme toggle" trước đây nằm ở Header (trùng
@@ -38,9 +44,17 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen }) => {
-  const { activeTab, setActiveTab, theme, toggleTheme, activeRole, setActiveRole, currentUser } = usePayroll() as any;
+  const {
+    activeTab, setActiveTab, theme, toggleTheme, activeRole, setActiveRole, currentUser,
+    authRole, signOutAuth,
+  } = usePayroll() as any;
   const RoleIcon = ROLE_META[activeRole as UserRole].icon;
   const [reopenHover, setReopenHover] = React.useState(false);
+
+  // EPCC (payroll-simple-role-gate) — ẩn hẳn mục "BẢNG LƯƠNG" (id 'settings')
+  // khỏi menu nếu role thật (authRole) không phải Manager, để không hiện
+  // 1 mục bấm vào rồi mới báo "không có quyền" — mất công user bấm nhầm.
+  const visibleItems = ITEMS.filter((item) => canAccessTab(item.id, authRole));
 
   // FIX (keep-sidebar-state-on-select): trước đây chọn menu xong tự gọi
   // onClose?.() để đóng Sidebar lại (hành vi off-canvas). Theo yêu cầu
@@ -193,7 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
       </div>
 
       <ul className="sidebar-menu">
-        {ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <li
@@ -219,7 +233,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
         padding: '12px',
         display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0,
       }}>
-        {/* Role switcher */}
+        {/* EPCC (payroll-simple-role-gate) — badge role THẬT (Staff/OP/
+            Manager, từ profiles.role) + nút đăng xuất. Đặt trên khối "Role
+            switcher" giả lập cũ bên dưới — 2 khối này ĐỘC LẬP nhau, không
+            gộp: khối cũ vẫn là công cụ demo/test, khối mới là quyền thật. */}
+        {authRole && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            background: 'rgba(207,220,0,0.14)', border: '1px solid rgba(207,220,0,0.3)',
+            borderRadius: '10px', padding: '6px 8px',
+          }}>
+            <Shield size={14} color="#cfdc00" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff', flex: 1 }}>
+              {ROLE_LABEL[authRole as keyof typeof ROLE_LABEL]?.vi ?? authRole}
+            </span>
+            <button
+              onClick={signOutAuth}
+              title="Đăng xuất"
+              aria-label="Đăng xuất"
+              style={{
+                border: 'none', background: 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', padding: '2px',
+              }}
+            >
+              <LogOut size={14} color="#cfe8e6" />
+            </button>
+          </div>
+        )}
+
+        {/* Role switcher (giả lập, dùng nội bộ — KHÔNG phải quyền đăng nhập thật) */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '6px',
           background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',

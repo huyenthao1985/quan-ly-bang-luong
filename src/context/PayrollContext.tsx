@@ -11,6 +11,10 @@ import {
   buildDefaultPayrollViewPermissions,
 } from '../types/payroll';
 import { isSupabaseEnabled } from '../lib/supabase';
+// EPCC (payroll-simple-role-gate) — Profile/AuthRole đến từ đăng nhập THẬT
+// (useAuthGate ở App.tsx), khác hẳn UserRole('Admin'|'Leader'|'User') vốn là
+// role giả lập chọn tay ở trên — đặt alias AuthRole để tránh trùng tên.
+import type { Profile, UserRole as AuthRole } from '../lib/auth';
 import {
   fetchEmployees,
   fetchAttendanceRecords,
@@ -46,6 +50,14 @@ interface PayrollContextType {
   attendanceRecords: Record<string, EmployeeAttendanceRecord>; // key: `${employeeId}_${year}_${month}`
   currentUser: User;
   activeRole: UserRole;
+  // EPCC (payroll-simple-role-gate) — hồ sơ đăng nhập THẬT (Supabase
+  // `profiles`) và role thật ('user'/'editor'/'admin', nhãn hiển thị
+  // Staff/OP/Manager — xem lib/auth.ts). Dùng để gate mục "BẢNG LƯƠNG" (tab
+  // 'settings') qua canAccessTab, KHÔNG liên quan tới activeRole/currentUser
+  // (role giả lập) ở trên — 2 cơ chế độc lập, giữ nguyên cả 2.
+  authProfile: Profile;
+  authRole: AuthRole | null;
+  signOutAuth: () => void;
   theme: 'light' | 'dark';
   selectedMonth: number;
   selectedYear: number;
@@ -97,7 +109,17 @@ interface PayrollContextType {
 
 const PayrollContext = createContext<PayrollContextType | undefined>(undefined);
 
-export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// EPCC (payroll-simple-role-gate) — PayrollProvider giờ nhận thêm
+// authProfile/onSignOut từ useAuthGate() ở App.tsx (App.tsx chỉ render
+// PayrollProvider SAU KHI đã có profile hợp lệ, xem App.tsx), để expose lại
+// qua context cho Sidebar (badge role + nút đăng xuất) và AccessDenied gate.
+interface PayrollProviderProps {
+  children: React.ReactNode;
+  authProfile: Profile;
+  onSignOut: () => void;
+}
+
+export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, authProfile, onSignOut }) => {
   // ─── Local state (khởi tạo từ localStorage trước, sau đó đồng bộ với Supabase) ───
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('payroll_employees');
@@ -560,6 +582,9 @@ export const PayrollProvider: React.FC<{ children: React.ReactNode }> = ({ child
         attendanceRecords,
         currentUser,
         activeRole,
+        authProfile,
+        authRole: authProfile.role,
+        signOutAuth: onSignOut,
         theme,
         selectedMonth,
         selectedYear,
