@@ -17,7 +17,7 @@ import { LoginGate } from './components/LoginGate';
 import { AccessDenied } from './components/AccessDenied';
 
 const MainContent: React.FC = () => {
-  const { activeTab, authRole } = usePayroll();
+  const { activeTab, authRole, authProfile } = usePayroll();
 
   return (
     <main
@@ -29,9 +29,11 @@ const MainContent: React.FC = () => {
       {activeTab === 'attendance' && <AttendanceTab />}
       {activeTab === 'settings' && (
         // EPCC (payroll-simple-role-gate) — mục "BẢNG LƯƠNG" chỉ Manager
-        // (authRole === 'admin') mới xem được; role khác thấy AccessDenied
-        // thay vì nội dung bảng lương, dù có gõ trực tiếp activeTab='settings'.
-        canAccessTab('settings', authRole)
+        // (authRole === 'admin') mới xem được, CỘNG THÊM ngoại lệ cá nhân
+        // cho tài khoản VP (xem TAB_ACCESS_EXCEPTIONS trong lib/auth.ts) —
+        // role khác/không thuộc diện ngoại lệ sẽ thấy AccessDenied thay vì
+        // nội dung bảng lương, dù có gõ trực tiếp activeTab='settings'.
+        canAccessTab('settings', authRole, authProfile?.email)
           ? <PayrollTab />
           : <AccessDenied lang="vi" />
       )}

@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+// EPCC (login-bg-photo) — theo yêu cầu người dùng: dùng ảnh Sa Pa (thị trấn
+// trong mây) làm nền trang đăng nhập, thay cho gradient tạm trước đây.
+// Đặt file tại src/assets/login-bg.png (copy file login-bg.png đính kèm vào
+// đúng đường dẫn này). Đổi ảnh khác chỉ cần thay file cùng tên, không cần
+// sửa code.
+import loginBg from '../assets/login-bg.png';
 
 // EPCC (username-login) — cho phép đăng nhập bằng username (vd: "Kho",
 // "VP") thay vì email thật. Nếu chuỗi nhập vào không có "@" thì hiểu là
@@ -11,11 +17,9 @@ function resolveLoginEmail(input: string) {
   const v = input.trim();
   return v.includes('@') ? v : `${v.toLowerCase()}@noemail.local`;
 }
-// EPCC (payroll-simple-role-gate) — project Bảng lương chưa có sẵn ảnh nền
-// riêng (src/assets/login-bg.png) như bản gốc của app Dashboards, nên bỏ
-// hẳn ảnh ngoài, dùng gradient CSS thay thế (xem imv-bg-photo bên dưới).
-// Muốn dùng ảnh thật: thêm file vào src/assets/, import lại loginBg từ đó,
-// rồi nối `, url(${loginBg})` vào cuối 2 dòng backgroundImage bên dưới.
+// EPCC (login-bg-photo) — đã có ảnh nền thật (src/assets/login-bg.png,
+// xem import loginBg ở trên), ghép vào cuối 2 dòng backgroundImage bên
+// dưới qua `, url(${loginBg})`.
 
 interface LoginGateProps {
   lang: 'vi' | 'en' | 'ko';
@@ -39,8 +43,8 @@ const TXT = {
     eyebrow: 'IM VINA',
     headline: 'Nỗ lực làm hết mình',
     hint: 'Kéo dây để bật / tắt đèn',
-    cardTitle: 'Chào mừng', cardSub: 'PPC Team — IM VINA',
-    labelEmail: 'Email', placeholderEmail: 'Nhập email',
+    cardTitle: 'QUẢN LÝ BẢNG LƯƠNG', cardSub: 'PPC Team — IM VINA',
+    labelEmail: 'ID', placeholderEmail: 'Nhập ID',
     labelPass: 'Mật khẩu', placeholderPass: 'Nhập mật khẩu',
     btnSignIn: 'Đăng nhập',
     footNote: 'Chưa có tài khoản?', signup: 'Đăng ký',
@@ -63,7 +67,7 @@ const TXT = {
     headline: 'We will do our best',
     hint: 'Pull the cord to switch the lamp on / off',
     cardTitle: 'Welcome', cardSub: 'PPC Team — IM VINA',
-    labelEmail: 'Email', placeholderEmail: 'Enter email',
+    labelEmail: 'ID', placeholderEmail: 'Enter ID',
     labelPass: 'Password', placeholderPass: 'Enter password',
     btnSignIn: 'Sign In',
     footNote: "Don't have an account?", signup: 'Sign up',
@@ -86,7 +90,7 @@ const TXT = {
     headline: '최선을 다 하겠습니다',
     hint: '줄을 당겨 전등을 켜거나 끄세요',
     cardTitle: '환영합니다', cardSub: 'PPC Team — IM VINA',
-    labelEmail: '이메일', placeholderEmail: '이메일 입력',
+    labelEmail: 'ID', placeholderEmail: 'ID 입력',
     labelPass: '비밀번호', placeholderPass: '비밀번호 입력',
     btnSignIn: '로그인',
     footNote: '계정이 없으신가요?', signup: '회원가입',
@@ -125,6 +129,19 @@ function MailIcon() {
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  );
+}
+// EPCC (id-login-label) — theo yêu cầu người dùng: đổi nhãn "Email" thành
+// "ID" (vì đăng nhập giờ dùng chung username lẫn email), icon phong bì
+// (MailIcon) không còn phù hợp -> đổi sang icon hình người trong khung thẻ,
+// kiểu "ID card / user".
+function UserIdIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.5-6.5 8-6.5s8 2.5 8 6.5" />
     </svg>
   );
 }
@@ -257,8 +274,8 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
         className="imv-bg-photo"
         style={{
           backgroundImage: lampOn
-            ? 'linear-gradient(rgba(40,22,4,0.14), rgba(20,10,2,0.18)), radial-gradient(circle at 30% 20%, #3a3550 0%, #14141c 55%, #0b0b10 100%)'
-            : 'linear-gradient(rgba(8,9,14,0.24), rgba(8,9,14,0.3)), radial-gradient(circle at 30% 20%, #3a3550 0%, #14141c 55%, #0b0b10 100%)',
+            ? `linear-gradient(rgba(40,22,4,0.14), rgba(20,10,2,0.18)), url(${loginBg})`
+            : `linear-gradient(rgba(8,9,14,0.34), rgba(8,9,14,0.42)), url(${loginBg})`,
           backgroundSize: 'cover',
           backgroundPosition: `calc(50% + ${mouseX * -1.4}%) calc(40% + ${mouseY * -1.2}%)`,
           backgroundRepeat: 'no-repeat',
@@ -356,7 +373,7 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
             <div className="imv-field">
               <label>{t.labelEmail}</label>
               <div className="imv-input-wrap">
-                <span className="imv-input-icon"><MailIcon /></span>
+                <span className="imv-input-icon"><UserIdIcon /></span>
                 <input
                   className="imv-input-has-icon"
                   required type="text" autoComplete="username"

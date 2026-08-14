@@ -41,10 +41,28 @@ export const TAB_ACCESS: Record<string, UserRole[]> = {
 
 const DEFAULT_TAB_ROLES: UserRole[] = ['user', 'editor', 'admin'];
 
-export function canAccessTab(tabId: string, role: UserRole | null | undefined): boolean {
+// EPCC (staff-exception-vp) — theo yêu cầu người dùng: tài khoản VP (role
+// thật vẫn là 'user'/Staff, KHÔNG đổi trong DB) được xem TOÀN BỘ mục
+// "BẢNG LƯƠNG" (tab 'settings') như Manager — đây là ngoại lệ CÁ NHÂN,
+// khác với TAB_ACCESS vốn gate theo NHÓM role. Khớp theo email (ổn định,
+// duy nhất) — không dùng username vì username có thể đổi. Muốn thêm/bớt
+// người khác được ngoại lệ, chỉ cần sửa map này, không đụng chỗ khác.
+const TAB_ACCESS_EXCEPTIONS: Record<string, string[]> = {
+  'vp@noemail.local': ['settings'],
+};
+
+export function canAccessTab(
+  tabId: string,
+  role: UserRole | null | undefined,
+  email?: string | null
+): boolean {
   if (!role) return false;
   const allowed = TAB_ACCESS[tabId] ?? DEFAULT_TAB_ROLES;
-  return allowed.includes(role);
+  if (allowed.includes(role)) return true;
+  if (email && TAB_ACCESS_EXCEPTIONS[email.trim().toLowerCase()]?.includes(tabId)) {
+    return true;
+  }
+  return false;
 }
 
 // useAuthGate — hook DUY NHẤT quản lý trạng thái đăng nhập cho App.tsx, dùng

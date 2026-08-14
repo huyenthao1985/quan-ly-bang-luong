@@ -46,7 +46,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen }) => {
   const {
     activeTab, setActiveTab, theme, toggleTheme, activeRole, setActiveRole, currentUser,
-    authRole, signOutAuth,
+    authRole, authProfile, signOutAuth,
   } = usePayroll() as any;
   const RoleIcon = ROLE_META[activeRole as UserRole].icon;
   const [reopenHover, setReopenHover] = React.useState(false);
@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
   // EPCC (payroll-simple-role-gate) — ẩn hẳn mục "BẢNG LƯƠNG" (id 'settings')
   // khỏi menu nếu role thật (authRole) không phải Manager, để không hiện
   // 1 mục bấm vào rồi mới báo "không có quyền" — mất công user bấm nhầm.
-  const visibleItems = ITEMS.filter((item) => canAccessTab(item.id, authRole));
+  const visibleItems = ITEMS.filter((item) => canAccessTab(item.id, authRole, authProfile?.email));
 
   // FIX (keep-sidebar-state-on-select): trước đây chọn menu xong tự gọi
   // onClose?.() để đóng Sidebar lại (hành vi off-canvas). Theo yêu cầu
