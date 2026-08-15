@@ -49,6 +49,12 @@ export const PayrollTab: React.FC = () => {
   // Nếu chưa đăng nhập lớp thứ 2 xem Bảng lương
   const activeEmpId = unlockedEmpId || (authProfile?.employee_id ? authProfile.employee_id : null);
 
+  React.useEffect(() => {
+    if (activeEmpId && selectedEmployeeId !== activeEmpId) {
+      setSelectedEmployeeId(activeEmpId);
+    }
+  }, [activeEmpId, selectedEmployeeId, setSelectedEmployeeId]);
+
   if (!activeEmpId) {
     return (
       <PayrollAuthGate

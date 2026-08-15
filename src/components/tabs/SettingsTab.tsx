@@ -101,24 +101,51 @@ export const SettingsTab: React.FC = () => {
   // theo đúng tinh thần "1 nút Lưu duy nhất" đã áp dụng cho cả config lẫn manual overrides.
   const [permMatrix, setPermMatrix] = useState(payrollViewPermissions);
 
-  // EPCC (account-scope-filter) — Lọc vị trí cho phép (VP: Manager, Senior Staff, Staff)
-  const allowedPositions = (getAllowedPositionsForUser(
-    authRole,
-    authProfile?.email,
-    authProfile?.username,
-    viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : undefined
-  ) as Position[] | undefined);
+  // EPCC (account-scope-filter) — Lọc vị trí và nhân viên cho phép:
+  const isSuperAdmin = authRole === 'admin';
+  const em = (authProfile?.email || '').toLowerCase();
+  const un = (authProfile?.username || '').toLowerCase();
+  const isVP = em.includes('vp') || un === 'vp';
+  const isKHO = em.includes('kho') || un === 'kho';
 
-  // Danh sách nhân viên trong phạm vi được xem
-  const visibleEmployees = allowedPositions
-    ? employees.filter((emp) => allowedPositions.includes(emp.position))
-    : employees;
+  // Lấy mã NV liên kết (từ profile hoặc email ảo mã NV)
+  const linkedEmployeeId = authProfile?.employee_id ||
+    (em.endsWith('@imvina.com') ? em.replace('@imvina.com', '') : null) ||
+    (em.endsWith('@noemail.local') && !isVP && !isKHO ? em.replace('@noemail.local', '') : null);
 
-  const positions: Position[] = allowedPositions || ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP'];
+  let visibleEmployees = employees;
+  if (isSuperAdmin) {
+    visibleEmployees = employees;
+  } else if (isVP) {
+    visibleEmployees = employees.filter((emp) => ['Manager', 'Senior Staff', 'Staff'].includes(emp.position));
+  } else if (isKHO) {
+    visibleEmployees = employees.filter((emp) => ['Leader', 'Staff', 'OP'].includes(emp.position));
+  } else if (linkedEmployeeId) {
+    const myEmps = employees.filter((emp) => emp.id.toLowerCase() === linkedEmployeeId.toLowerCase());
+    visibleEmployees = myEmps.length > 0 ? myEmps : employees;
+  } else if (authProfile?.employee_id) {
+    visibleEmployees = employees.filter((emp) => emp.id === authProfile.employee_id);
+  }
 
-  const visibleAllowancePositions: Position[] = allowedPositions || (activeRole === 'Admin'
-    ? positions
-    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []));
+  // Tự động chuyển selectedEmployeeId về nhân viên đang đăng nhập nếu là tài khoản cá nhân
+  useEffect(() => {
+    if (!isSuperAdmin && !isVP && !isKHO && linkedEmployeeId) {
+      const match = employees.find((e) => e.id.toLowerCase() === linkedEmployeeId.toLowerCase());
+      if (match) setSelectedEmployeeId(match.id);
+    } else if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmployeeId)) {
+      setSelectedEmployeeId(visibleEmployees[0].id);
+    }
+  }, [linkedEmployeeId, isSuperAdmin, isVP, isKHO, visibleEmployees, selectedEmployeeId, setSelectedEmployeeId, employees]);
+
+  const positions: Position[] = isSuperAdmin
+    ? ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP']
+    : isVP
+    ? ['Manager', 'Senior Staff', 'Staff']
+    : isKHO
+    ? ['Leader', 'Staff', 'OP']
+    : (visibleEmployees[0] ? [visibleEmployees[0].position] : ['Staff']);
+
+  const visibleAllowancePositions: Position[] = positions;
 
   // EPCC (move-manual-inputs-to-settings) — mục "Nhập Tay Bổ Sung Theo Nhân Viên/Tháng":
   const manualEmpId = selectedEmployeeId || (visibleEmployees[0]?.id ?? employees[0]?.id ?? '');
@@ -130,18 +157,13 @@ export const SettingsTab: React.FC = () => {
     ? calculatePayslip(manualEmp, manualAttendanceRecord, salaryConfig)
     : null;
 
-  // Tự động chuyển về nhân viên hợp lệ đầu tiên nếu nhân viên cũ nằm ngoài danh sách được phép
-  useEffect(() => {
-    if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmployeeId)) {
-      setSelectedEmployeeId(visibleEmployees[0].id);
-    }
-  }, [visibleEmployees, selectedEmployeeId, setSelectedEmployeeId]);
-
   const [positionFilter, setPositionFilter] = useState<Position | ''>(manualEmp?.position || '');
 
   useEffect(() => {
     const emp = visibleEmployees.find((e) => e.id === manualEmpId) || visibleEmployees[0] || employees[0];
-    setPositionFilter(emp?.position || '');
+    if (emp) {
+      setPositionFilter(emp.position);
+    }
   }, [manualEmpId, visibleEmployees, employees]);
 
   const selectedEmpPosition: Position | undefined = positionFilter || undefined;
@@ -422,15 +444,28 @@ export const SettingsTab: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs items-center">
             <div className="flex items-center gap-1.5">
               <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Nhân viên:</label>
-              <select
-                value={manualEmpId}
-                onChange={(e) => setManualEmpId(e.target.value)}
-                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
-              >
-                {visibleEmployees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName} ({emp.position})</option>
-                ))}
-              </select>
+              {!isSuperAdmin && !isVP && !isKHO ? (
+                <div className="w-full px-2 py-1 text-[11px] bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-700 rounded text-emerald-800 dark:text-emerald-200 font-bold flex items-center gap-1 truncate">
+                  <span>🔒</span>
+                  <span className="truncate">{manualEmp.id} - {manualEmp.fullName}</span>
+                </div>
+              ) : (
+                <select
+                  value={manualEmpId}
+                  onChange={(e) => {
+                    setManualEmpId(e.target.value);
+                    const selected = visibleEmployees.find((emp) => emp.id === e.target.value);
+                    if (selected) {
+                      setPositionFilter(selected.position);
+                    }
+                  }}
+                  className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+                >
+                  {visibleEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName} ({emp.position})</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* EPCC (position-selector-next-to-employee) — cột chọn vị trí ngay cạnh Nhân
@@ -438,16 +473,22 @@ export const SettingsTab: React.FC = () => {
                 vị trí khác để lọc bảng phụ cấp bên dưới mà không cần đổi nhân viên. */}
             <div className="flex items-center gap-1.5">
               <label className="text-slate-700 dark:text-slate-300 font-bold shrink-0 text-[11px]">Vị trí:</label>
-              <select
-                value={positionFilter}
-                onChange={(e) => setPositionFilter(e.target.value as Position | '')}
-                className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded text-purple-700 dark:text-purple-300 font-bold cursor-pointer"
-              >
-                <option value="">Tất cả</option>
-                {positions.map((p) => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+              {!isSuperAdmin && !isVP && !isKHO ? (
+                <div className="w-full px-2 py-1 text-[11px] bg-purple-50 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-700 rounded text-purple-800 dark:text-purple-200 font-bold">
+                  {manualEmp.position}
+                </div>
+              ) : (
+                <select
+                  value={positionFilter}
+                  onChange={(e) => setPositionFilter(e.target.value as Position | '')}
+                  className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-purple-300 dark:border-purple-700 rounded text-purple-700 dark:text-purple-300 font-bold cursor-pointer"
+                >
+                  <option value="">Tất cả</option>
+                  {positions.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5">
