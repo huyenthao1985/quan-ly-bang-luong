@@ -8,7 +8,7 @@ interface PayrollAuthGateProps {
   onSuccess?: (employeeId: string) => void;
 }
 
-export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = () => {
+export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = ({ onSuccess }) => {
   const { employees, setSelectedEmployeeId, authProfile, authRole } = usePayroll();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [directory, setDirectory] = useState<EmployeeDirectoryEntry[]>([]);
@@ -77,6 +77,9 @@ export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = () => {
 
     if (loginSuccess) {
       setSelectedEmployeeId(selectedEmp.id);
+      if (onSuccess) {
+        onSuccess(selectedEmp.id);
+      }
     } else {
       if (lastErrorMsg.toLowerCase().includes('invalid login credentials')) {
         setError('Mật khẩu không chính xác hoặc tài khoản chưa được đăng ký/phê duyệt.');
