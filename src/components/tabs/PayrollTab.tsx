@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Wallet, LogOut, ShieldCheck } from 'lucide-react';
+import { Settings as SettingsIcon, Wallet, LogOut, ShieldCheck, Users } from 'lucide-react';
 import { SettingsTab } from './SettingsTab';
 import { PayslipTab } from './PayslipTab';
+import { AccountsTab } from './AccountsTab';
 import { PayrollAuthGate } from './PayrollAuthGate';
 import { usePayroll } from '../../context/PayrollContext';
 
-type PayrollSubTab = 'settings' | 'payslip';
-
-const SUB_TABS: { id: PayrollSubTab; label: string; icon: any }[] = [
-  { id: 'settings', label: 'Cài đặt', icon: SettingsIcon },
-  { id: 'payslip',  label: 'Bảng lương', icon: Wallet },
-];
+type PayrollSubTab = 'settings' | 'payslip' | 'accounts';
 
 export const PayrollTab: React.FC = () => {
   const { authRole, authProfile, employees, selectedEmployeeId, setSelectedEmployeeId } = usePayroll();
@@ -18,11 +14,13 @@ export const PayrollTab: React.FC = () => {
 
   // Quyền quản trị tối cao của Admin (Manager/S. Manager)
   const isSuperAdmin = authRole === 'admin';
-  const isVP = authProfile?.email?.toLowerCase().includes('vp') || authProfile?.username?.toLowerCase() === 'vp';
-  const isKHO = authProfile?.email?.toLowerCase().includes('kho') || authProfile?.username?.toLowerCase() === 'kho';
-  const isPrivileged = isSuperAdmin || isVP || isKHO;
-
   const [subTab, setSubTab] = useState<PayrollSubTab>(isSuperAdmin ? 'settings' : 'payslip');
+
+  const subTabs = [
+    { id: 'settings' as PayrollSubTab, label: 'Cài đặt', icon: SettingsIcon },
+    { id: 'payslip' as PayrollSubTab, label: 'Bảng lương', icon: Wallet },
+    ...(isSuperAdmin ? [{ id: 'accounts' as PayrollSubTab, label: 'Quản lý tài khoản', icon: Users }] : []),
+  ];
 
   // Với Admin (S. Manager), có toàn quyền quản trị ngay lập tức
   if (isSuperAdmin) {
@@ -31,10 +29,18 @@ export const PayrollTab: React.FC = () => {
         {/* ── Sheet toggle cho Admin ── */}
         <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
           <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-            {SUB_TABS.map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setSubTab(id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[0.9rem] font-semibold transition-all ${subTab === id ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}>
-                <Icon className="w-3.5 h-3.5" />{label}
+            {subTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setSubTab(id)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[0.9rem] font-semibold transition-all cursor-pointer ${
+                  subTab === id
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
               </button>
             ))}
           </div>
@@ -42,6 +48,7 @@ export const PayrollTab: React.FC = () => {
 
         {subTab === 'settings' && <SettingsTab />}
         {subTab === 'payslip' && <PayslipTab />}
+        {subTab === 'accounts' && <AccountsTab />}
       </div>
     );
   }
@@ -104,10 +111,18 @@ export const PayrollTab: React.FC = () => {
       {/* ── Sheet toggle cho Cài đặt / Bảng lương ── */}
       <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
         <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
-          {SUB_TABS.map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setSubTab(id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-[0.9rem] font-semibold transition-all ${subTab === id ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}>
-              <Icon className="w-3.5 h-3.5" />{label}
+          {subTabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setSubTab(id)}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[0.9rem] font-semibold transition-all cursor-pointer ${
+                subTab === id
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -115,7 +130,7 @@ export const PayrollTab: React.FC = () => {
 
       {subTab === 'settings' && <SettingsTab />}
       {subTab === 'payslip' && <PayslipTab />}
+      {subTab === 'accounts' && <AccountsTab />}
     </div>
   );
 };
-
