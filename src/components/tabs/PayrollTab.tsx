@@ -95,7 +95,20 @@ export const PayrollTab: React.FC = () => {
         </button>
       </div>
 
-      <PayslipTab />
+      {/* ── Sheet toggle cho Cài đặt / Bảng lương ── */}
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+        <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+          {SUB_TABS.map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => setSubTab(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-[0.9rem] font-semibold transition-all ${subTab === id ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50'}`}>
+              <Icon className="w-3.5 h-3.5" />{label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {subTab === 'settings' && <SettingsTab />}
+      {subTab === 'payslip' && <PayslipTab />}
     </div>
   );
 };
