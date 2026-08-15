@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings as SettingsIcon, Wallet } from 'lucide-react';
 import { SettingsTab } from './SettingsTab';
 import { PayslipTab } from './PayslipTab';
+import { PayrollAuthGate } from './PayrollAuthGate';
 import { usePayroll } from '../../context/PayrollContext';
 
 type PayrollSubTab = 'settings' | 'payslip';
@@ -23,7 +24,12 @@ export const PayrollTab: React.FC = () => {
 
   const [subTab, setSubTab] = useState<PayrollSubTab>(isManager ? 'settings' : 'payslip');
 
-  // Với nhân viên thông thường (Staff/OP), chỉ hiển thị Bảng lương cá nhân, ẩn sheet Cài đặt hệ thống
+  // Nếu chưa có phiên đăng nhập
+  if (!authProfile) {
+    return <PayrollAuthGate />;
+  }
+
+  // Với nhân viên thông thường (Staff/OP), chỉ hiển thị Bảng lương cá nhân của chính họ
   if (!isManager) {
     return (
       <div className="space-y-[2mm]">
