@@ -31,38 +31,46 @@ export const PayslipTab: React.FC = () => {
   const setSelectedEmpId = setSelectedEmployeeId;
   const printRef = useRef<HTMLDivElement>(null);
 
-  // EPCC (account-scope-filter) — Lọc vị trí cho phép:
-  // - Admin (S. Manager): toàn quyền
+  // EPCC (account-scope-filter) — Lọc vị trí và nhân viên cho phép:
+  // - Admin (S. Manager): toàn quyền xem tất cả
   // - VP: Manager, Senior Staff, Staff
   // - KHO: Leader, Staff, OP
-  // - Nhân viên thường có employee_id: chỉ xem chính mình
-  const allowedPositions = getAllowedPositionsForUser(
-    authRole,
-    authProfile?.email,
-    authProfile?.username,
-    viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : undefined
-  );
-
+  // - Nhân viên đăng ký tài khoản: CHỈ xem được đúng vị trí và đúng tên của bản thân mình
   const isSuperAdmin = authRole === 'admin';
-  const isVPorKHO = (authProfile?.email?.toLowerCase().includes('vp') ||
-    authProfile?.username?.toLowerCase() === 'vp' ||
-    authProfile?.email?.toLowerCase().includes('kho') ||
-    authProfile?.username?.toLowerCase() === 'kho');
-  const isFullAdmin = isSuperAdmin || isVPorKHO;
+  const em = (authProfile?.email || '').toLowerCase();
+  const un = (authProfile?.username || '').toLowerCase();
+  const isVP = em.includes('vp') || un === 'vp';
+  const isKHO = em.includes('kho') || un === 'kho';
+  const isFullAdmin = isSuperAdmin || isVP || isKHO;
 
-  const visibleEmployees = allowedPositions
-    ? employees.filter((emp) => allowedPositions.includes(emp.position))
-    : (!isSuperAdmin && !isVPorKHO && authProfile?.employee_id
-        ? employees.filter((emp) => emp.id === authProfile.employee_id)
-        : employees);
+  // Lấy mã NV liên kết (từ profile hoặc email ảo mã NV)
+  const linkedEmployeeId = authProfile?.employee_id ||
+    (em.endsWith('@imvina.com') ? em.replace('@imvina.com', '') : null) ||
+    (em.endsWith('@noemail.local') && !isVP && !isKHO ? em.replace('@noemail.local', '') : null);
+
+  let visibleEmployees = employees;
+  if (isSuperAdmin) {
+    visibleEmployees = employees;
+  } else if (isVP) {
+    visibleEmployees = employees.filter((emp) => ['Manager', 'Senior Staff', 'Staff'].includes(emp.position));
+  } else if (isKHO) {
+    visibleEmployees = employees.filter((emp) => ['Leader', 'Staff', 'OP'].includes(emp.position));
+  } else if (linkedEmployeeId) {
+    // Nhân viên cá nhân: KHÓA CHẶT chỉ xem đúng chính mình
+    const myEmps = employees.filter((emp) => emp.id.toLowerCase() === linkedEmployeeId.toLowerCase());
+    visibleEmployees = myEmps.length > 0 ? myEmps : employees;
+  } else if (authProfile?.employee_id) {
+    visibleEmployees = employees.filter((emp) => emp.id === authProfile.employee_id);
+  }
 
   useEffect(() => {
-    if (!isSuperAdmin && !isVPorKHO && authProfile?.employee_id) {
-      setSelectedEmpId(authProfile.employee_id);
+    if (!isSuperAdmin && !isVP && !isKHO && linkedEmployeeId) {
+      const match = employees.find((e) => e.id.toLowerCase() === linkedEmployeeId.toLowerCase());
+      if (match) setSelectedEmpId(match.id);
     } else if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
       setSelectedEmpId(visibleEmployees[0].id);
     }
-  }, [authProfile?.employee_id, isSuperAdmin, isVPorKHO, visibleEmployees, selectedEmpId, setSelectedEmpId]);
+  }, [linkedEmployeeId, isSuperAdmin, isVP, isKHO, visibleEmployees, selectedEmpId, setSelectedEmpId, employees]);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId) || employees[0];
 
@@ -127,17 +135,26 @@ export const PayslipTab: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
             Nhân viên
           </label>
-          <select
-            value={selectedEmpId}
-            onChange={(e) => setSelectedEmpId(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-[260px] cursor-pointer"
-          >
-            {visibleEmployees.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.id} - {emp.fullName}
-              </option>
-            ))}
-          </select>
+          {visibleEmployees.length <= 1 ? (
+            <div className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 min-w-[260px] flex items-center justify-between gap-2 shadow-inner">
+              <span className="truncate">🔒 {selectedEmp.id} - {selectedEmp.fullName}</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 rounded font-semibold shrink-0">
+                {selectedEmp.position}
+              </span>
+            </div>
+          ) : (
+            <select
+              value={selectedEmpId}
+              onChange={(e) => setSelectedEmpId(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 min-w-[260px] cursor-pointer"
+            >
+              {visibleEmployees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.id} - {emp.fullName} ({emp.position})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div>
