@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { INITIAL_EMPLOYEES } from '../data/initialData';
 
 // EPCC (payroll-simple-role-gate) — theo yêu cầu người dùng: thêm đăng nhập
 // thật (tái dùng LoginGate + client Supabase hiện có) cho app Bảng lương,
@@ -208,23 +209,40 @@ export interface EmployeeDirectoryEntry {
 }
 
 export async function fetchEmployeeDirectory(): Promise<EmployeeDirectoryEntry[]> {
+  const fallbackList: EmployeeDirectoryEntry[] = INITIAL_EMPLOYEES.map((e) => ({
+    id: e.id,
+    full_name: e.fullName,
+    position: e.position,
+  }));
+
   if (!supabase) {
-    return [];
+    return fallbackList;
   }
-  let { data, error } = await supabase
-    .from('employees_directory')
-    .select('id, full_name, position')
-    .order('full_name');
-  if (error || !data || data.length === 0) {
-    const { data: empData, error: empErr } = await supabase
-      .from('employees')
+
+  try {
+    let { data, error } = await supabase
+      .from('employees_directory')
       .select('id, full_name, position')
       .order('full_name');
-    if (!empErr && empData && empData.length > 0) {
-      data = empData;
+
+    if (error || !data || data.length === 0) {
+      const { data: empData, error: empErr } = await supabase
+        .from('employees')
+        .select('id, full_name, position')
+        .order('full_name');
+      if (!empErr && empData && empData.length > 0) {
+        data = empData;
+      }
     }
+
+    if (data && data.length > 0) {
+      return data as EmployeeDirectoryEntry[];
+    }
+  } catch (e) {
+    console.warn('[Directory] Fallback to INITIAL_EMPLOYEES:', e);
   }
-  return (data as EmployeeDirectoryEntry[]) ?? [];
+
+  return fallbackList;
 }
 
 // useAuthGate — hook DUY NHẤT quản lý trạng thái đăng nhập cho App.tsx, dùng

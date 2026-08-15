@@ -211,13 +211,13 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
 
   useEffect(() => {
-    if (mode !== 'register' || employeeDirectory.length > 0 || employeeDirLoading) return;
+    if (employeeDirectory.length > 0 || employeeDirLoading) return;
     setEmployeeDirLoading(true);
     fetchEmployeeDirectory().then((list) => {
       setEmployeeDirectory(list);
       setEmployeeDirLoading(false);
     });
-  }, [mode, employeeDirectory.length, employeeDirLoading]);
+  }, [employeeDirectory.length, employeeDirLoading]);
 
   const selectedEmployee = employeeDirectory.find((e) => e.id === selectedEmployeeId) || null;
 
