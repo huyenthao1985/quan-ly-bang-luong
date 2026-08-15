@@ -237,8 +237,9 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
   // vào localStorage nếu người dùng tick "Nhớ tôi", để lần sau mở lại tự
   // điền sẵn email, đỡ phải gõ lại.
   useEffect(() => {
-    const saved = localStorage.getItem('imv_remember_email');
+    const saved = localStorage.getItem('imv_remember_empid') || localStorage.getItem('imv_remember_email');
     if (saved) {
+      setSelectedEmployeeId(saved);
       setEmail(saved);
       setRememberMe(true);
     }
@@ -253,9 +254,13 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!supabase) { setError('Supabase is not initialized'); return; }
+    if (!selectedEmployeeId) {
+      setError(t.errNoEmployee);
+      return;
+    }
     setError(''); setLoading(true);
 
-    const input = email.trim();
+    const input = selectedEmployeeId.trim();
     let loginError: any = null;
 
     if (input.includes('@')) {
@@ -286,8 +291,9 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
     setLoading(false);
     if (loginError) { setError(loginError.message || t.errGeneric); return; }
     if (rememberMe) {
-      localStorage.setItem('imv_remember_email', email.trim());
+      localStorage.setItem('imv_remember_empid', selectedEmployeeId.trim());
     } else {
+      localStorage.removeItem('imv_remember_empid');
       localStorage.removeItem('imv_remember_email');
     }
     // useAuthGate (App.tsx) tự cập nhật session/profile qua onAuthStateChange.
@@ -424,45 +430,38 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
           <div className="imv-sub">{mode === 'login' ? t.cardSub : t.registerSub}</div>
 
           <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
-            {mode === 'register' && (
-              <div className="imv-field">
-                <label>{t.labelFullname}</label>
-                <div className="imv-input-wrap">
-                  <span className="imv-input-icon"><UserIdIcon /></span>
-                  {employeeDirLoading ? (
-                    <div style={{ fontSize: '13px', color: 'var(--imv-ink-soft)', padding: '12px 14px 12px 38px' }}>{t.loadingEmployees}</div>
-                  ) : employeeDirectory.length === 0 ? (
-                    <div style={{ fontSize: '13px', color: '#b91c1c', padding: '12px 14px 12px 38px' }}>{t.noEmployees}</div>
-                  ) : (
-                    <select
-                      required
-                      className="imv-input-has-icon"
-                      value={selectedEmployeeId}
-                      onChange={e => setSelectedEmployeeId(e.target.value)}
-                    >
-                      <option value="">{t.placeholderFullname}</option>
+            <div className="imv-field">
+              <label>{t.labelFullname}</label>
+              <div className="imv-input-wrap">
+                <span className="imv-input-icon"><UserIdIcon /></span>
+                {employeeDirLoading ? (
+                  <div style={{ fontSize: '13px', color: 'var(--imv-ink-soft)', padding: '12px 14px 12px 38px' }}>{t.loadingEmployees}</div>
+                ) : employeeDirectory.length === 0 ? (
+                  <div style={{ fontSize: '13px', color: '#b91c1c', padding: '12px 14px 12px 38px' }}>{t.noEmployees}</div>
+                ) : (
+                  <select
+                    required
+                    className="imv-input-has-icon"
+                    value={selectedEmployeeId}
+                    onChange={e => setSelectedEmployeeId(e.target.value)}
+                  >
+                    <option value="">{t.placeholderFullname}</option>
+                    {mode === 'login' && (
+                      <optgroup label="Tài khoản Quản lý / Bộ phận">
+                        <option value="admin">⭐ Quản trị viên (Admin / Manager)</option>
+                        <option value="vp">🏢 Văn Phòng (VP)</option>
+                        <option value="kho">📦 Thủ Kho (KHO)</option>
+                      </optgroup>
+                    )}
+                    <optgroup label="Danh sách nhân viên">
                       {employeeDirectory.map((emp) => (
                         <option key={emp.id} value={emp.id}>{emp.full_name} — {emp.position}</option>
                       ))}
-                    </select>
-                  )}
-                </div>
+                    </optgroup>
+                  </select>
+                )}
               </div>
-            )}
-            {mode === 'login' && (
-              <div className="imv-field">
-                <label>{t.labelEmail}</label>
-                <div className="imv-input-wrap">
-                  <span className="imv-input-icon"><UserIdIcon /></span>
-                  <input
-                    className="imv-input-has-icon"
-                    required type="text" autoComplete="username"
-                    placeholder={t.placeholderEmail} value={email}
-                    onChange={e => setEmail(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+            </div>
             <div className="imv-field">
               <label>{t.labelPass}</label>
               <div className="imv-input-wrap">
