@@ -71,6 +71,37 @@ export function canAccessTab(
   return false;
 }
 
+// EPCC (account-scope-filter) — quy định phạm vi vị trí nhân viên được xem:
+// - Admin (S. Manager): toàn quyền xem tất cả vị trí.
+// - VP: theo yêu cầu người dùng CHỈ được xem Manager, Senior Staff và Staff (loại trừ S. Manager, Leader, OP).
+// - KHO: xem Leader, Staff, OP.
+export function getAllowedPositionsForUser(
+  authRole: UserRole | null | undefined,
+  email?: string | null,
+  username?: string | null,
+  fallbackAllowedPositions?: string[]
+): string[] | undefined {
+  const isSuperAdmin = authRole === 'admin';
+  if (isSuperAdmin) {
+    return undefined; // Toàn quyền xem tất cả
+  }
+
+  const em = (email || '').toLowerCase();
+  const un = (username || '').toLowerCase();
+  const isVP = em.includes('vp') || un === 'vp';
+
+  if (isVP) {
+    return ['Manager', 'Senior Staff', 'Staff'];
+  }
+
+  const isKHO = em.includes('kho') || un === 'kho';
+  if (isKHO) {
+    return ['Leader', 'Staff', 'OP'];
+  }
+
+  return fallbackAllowedPositions;
+}
+
 // EPCC (employee-account-link) — Admin gán/gỡ liên kết employee_id cho 1 tài khoản, qua RPC
 // `admin_assign_employee` (security definer, tự kiểm tra quyền admin trong Postgres — xem
 // employee_link_schema.sql). Client KHÔNG thể tự UPDATE cột employee_id qua REST API thường,

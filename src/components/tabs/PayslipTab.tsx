@@ -3,6 +3,7 @@ import { AlertTriangle, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { calculatePayslip, formatVND } from '../../utils/payrollCalculations';
 import { FormattedNumberInput } from '../ui/FormattedNumberInput';
+import { getAllowedPositionsForUser } from '../../lib/auth';
 
 export const PayslipTab: React.FC = () => {
   const {
@@ -30,34 +31,38 @@ export const PayslipTab: React.FC = () => {
   const setSelectedEmpId = setSelectedEmployeeId;
   const printRef = useRef<HTMLDivElement>(null);
 
-  // EPCC (payroll-employee-login-access) — kiểm tra quyền quản trị toàn bộ
-  const isFullAdmin = authRole === 'admin' ||
-    authProfile?.email?.toLowerCase().includes('vp') ||
-    authProfile?.email?.toLowerCase().includes('kho') ||
+  // EPCC (account-scope-filter) — Lọc vị trí cho phép:
+  // - Admin (S. Manager): toàn quyền
+  // - VP: Manager, Senior Staff, Staff
+  // - KHO: Leader, Staff, OP
+  // - Nhân viên thường có employee_id: chỉ xem chính mình
+  const allowedPositions = getAllowedPositionsForUser(
+    authRole,
+    authProfile?.email,
+    authProfile?.username,
+    viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : undefined
+  );
+
+  const isSuperAdmin = authRole === 'admin';
+  const isVPorKHO = (authProfile?.email?.toLowerCase().includes('vp') ||
     authProfile?.username?.toLowerCase() === 'vp' ||
-    authProfile?.username?.toLowerCase() === 'kho' ||
-    activeRole === 'Admin';
+    authProfile?.email?.toLowerCase().includes('kho') ||
+    authProfile?.username?.toLowerCase() === 'kho');
+  const isFullAdmin = isSuperAdmin || isVPorKHO;
 
-  const allowedPositions = isFullAdmin
-    ? undefined
-    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []);
-
-  // Nhân viên thông thường chỉ xem được bảng lương của chính mình (qua authProfile.employee_id)
-  const visibleEmployees = isFullAdmin
-    ? employees
-    : (authProfile?.employee_id
+  const visibleEmployees = allowedPositions
+    ? employees.filter((emp) => allowedPositions.includes(emp.position))
+    : (!isSuperAdmin && !isVPorKHO && authProfile?.employee_id
         ? employees.filter((emp) => emp.id === authProfile.employee_id)
-        : (allowedPositions
-            ? employees.filter((emp) => allowedPositions.includes(emp.position))
-            : employees));
+        : employees);
 
   useEffect(() => {
-    if (!isFullAdmin && authProfile?.employee_id) {
+    if (!isSuperAdmin && !isVPorKHO && authProfile?.employee_id) {
       setSelectedEmpId(authProfile.employee_id);
     } else if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
       setSelectedEmpId(visibleEmployees[0].id);
     }
-  }, [authProfile?.employee_id, isFullAdmin, visibleEmployees, selectedEmpId, setSelectedEmpId]);
+  }, [authProfile?.employee_id, isSuperAdmin, isVPorKHO, visibleEmployees, selectedEmpId, setSelectedEmpId]);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId) || employees[0];
 

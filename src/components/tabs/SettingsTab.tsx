@@ -5,7 +5,7 @@ import { Position, PositionAllowanceConfig, SalaryConfig } from '../../types/pay
 import { formatVND, calculatePayslip } from '../../utils/payrollCalculations';
 import { FormattedNumberInput } from '../ui/FormattedNumberInput';
 import { supabase } from '../../lib/supabase';
-import { Profile, UserRole, deriveRoleFromPosition, ROLE_LABEL } from '../../lib/auth';
+import { Profile, UserRole, deriveRoleFromPosition, ROLE_LABEL, getAllowedPositionsForUser } from '../../lib/auth';
 
 export const SettingsTab: React.FC = () => {
   const {
@@ -25,6 +25,8 @@ export const SettingsTab: React.FC = () => {
     updateAttendanceManualOverrides,
     selectedEmployeeId,
     setSelectedEmployeeId,
+    authRole,
+    authProfile,
   } = usePayroll();
 
   const [config, setConfig] = useState<SalaryConfig>({ ...salaryConfig });
@@ -99,63 +101,48 @@ export const SettingsTab: React.FC = () => {
   // theo đúng tinh thần "1 nút Lưu duy nhất" đã áp dụng cho cả config lẫn manual overrides.
   const [permMatrix, setPermMatrix] = useState(payrollViewPermissions);
 
-  const positions: Position[] = ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP'];
+  // EPCC (account-scope-filter) — Lọc vị trí cho phép (VP: Manager, Senior Staff, Staff)
+  const allowedPositions = (getAllowedPositionsForUser(
+    authRole,
+    authProfile?.email,
+    authProfile?.username,
+    viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : undefined
+  ) as Position[] | undefined);
 
-  // EPCC (allowance-table-view-permission) — bảng "Cấu hình phụ cấp theo vị trí" lộ mức
-  // phụ cấp của TẤT CẢ vị trí cho bất kỳ ai mở trang Cài đặt, kể cả Leader/User không được
-  // phép biết phụ cấp của vị trí khác mình. Tái dùng CHÍNH ma trận payrollViewPermissions
-  // đã dùng cho Bảng lương: Admin luôn thấy đủ 6 vị trí; Leader/User chỉ thấy các vị trí họ
-  // được phép xem (payrollViewPermissions[viewerPosition]), viewerPosition suy ra từ hồ sơ
-  // nhân viên vừa điểm danh gần nhất trên thiết bị (xem PayrollContext.viewerPosition).
-  const visibleAllowancePositions: Position[] = activeRole === 'Admin'
+  // Danh sách nhân viên trong phạm vi được xem
+  const visibleEmployees = allowedPositions
+    ? employees.filter((emp) => allowedPositions.includes(emp.position))
+    : employees;
+
+  const positions: Position[] = allowedPositions || ['S. Manager', 'Manager', 'Senior Staff', 'Leader', 'Staff', 'OP'];
+
+  const visibleAllowancePositions: Position[] = allowedPositions || (activeRole === 'Admin'
     ? positions
-    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []);
+    : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []));
 
   // EPCC (move-manual-inputs-to-settings) — mục "Nhập Tay Bổ Sung Theo Nhân Viên/Tháng":
-  // CHUYỂN NGUYÊN state + handler từ PayslipTab.tsx sang đây theo yêu cầu người dùng, giữ
-  // nguyên các fix trước đó:
-  //  - (pit-manual-save-overwrites-auto): manualTax kiểu `string`, rỗng '' = "chưa nhập tay"
-  //    → dùng công thức tự tính lũy tiến, CHỈ gửi manualPersonalTax khi thực sự có số.
-  //  - (unauthorized-absence-cuts-diligence-bonus): ô "Số ngày nghỉ không phép" > 0 sẽ cắt
-  //    Thưởng chuyên cần về 0 trong payrollCalculations.ts.
-  // Dùng chung selectedMonth/selectedYear toàn cục (đồng bộ với tab Bảng lương); nhân viên
-  // chọn riêng tại đây bằng state cục bộ `manualEmpId` để không ảnh hưởng lựa chọn ở tab khác.
-  // EPCC (sync-selected-employee-across-tabs) — dùng selectedEmployeeId từ Context (chung
-  // với PayslipTab) thay vì state cục bộ manualEmpId — khi chọn tên thì vị trí tự link theo
-  // và chuyển sang Bảng lương cũng đồng nhất.
-  const manualEmpId = selectedEmployeeId || (employees[0]?.id ?? '');
+  const manualEmpId = selectedEmployeeId || (visibleEmployees[0]?.id ?? employees[0]?.id ?? '');
   const setManualEmpId = setSelectedEmployeeId;
-  const manualEmp = employees.find((e) => e.id === manualEmpId) || employees[0];
-  const manualAttendanceKey = `${manualEmpId}_${selectedYear}_${selectedMonth}`;
+  const manualEmp = visibleEmployees.find((e) => e.id === manualEmpId) || visibleEmployees[0] || employees[0];
+  const manualAttendanceKey = `${manualEmp.id}_${selectedYear}_${selectedMonth}`;
   const manualAttendanceRecord = attendanceRecords[manualAttendanceKey];
   const manualPayslip = manualEmp
     ? calculatePayslip(manualEmp, manualAttendanceRecord, salaryConfig)
     : null;
 
-  // EPCC (allowance-table-filter-by-selected-employee) — theo yêu cầu: khi chọn nhân viên ở
-  // mục "Nhân viên" phía trên, hiển thị thêm vị trí/chức danh nhân viên đó đang thuộc nhóm
-  // nào, và bảng "Cấu hình phụ cấp theo vị trí" bên dưới CHỈ hiển thị đúng 1 dòng của vị trí
-  // đó (thay vì hiện cả 6 dòng / cả nhóm được phân quyền xem). Vẫn giữ nguyên ma trận phân
-  // quyền `visibleAllowancePositions` làm lớp chặn phía dưới: nếu vị trí đang chọn là vị trí
-  // mà người xem hiện tại (Leader/User) KHÔNG được phép xem, dòng đó sẽ không hiện ra.
-  // NOTE: giả định Employee có field `position: Position` (cùng type Position đã dùng cho
-  // viewerPosition/positionAllowances). Nếu field thực tế trong types/payroll.ts đặt tên khác
-  // (vd `role`, `chucVu`...), chỉ cần đổi `manualEmp?.position` bên dưới cho khớp.
-  //
-  // EPCC (position-selector-next-to-employee) — theo yêu cầu tiếp theo: thêm hẳn 1 cột chọn
-  // vị trí (dropdown) ngay cạnh Nhân viên, thay vì chỉ hiện chữ tĩnh. Mặc định khi đổi nhân
-  // viên sẽ tự đồng bộ về đúng vị trí của nhân viên đó, nhưng người dùng vẫn có thể tự chọn
-  // vị trí khác trong dropdown này để xem/sửa phụ cấp của vị trí bất kỳ (không cần đổi NV).
+  // Tự động chuyển về nhân viên hợp lệ đầu tiên nếu nhân viên cũ nằm ngoài danh sách được phép
+  useEffect(() => {
+    if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmployeeId)) {
+      setSelectedEmployeeId(visibleEmployees[0].id);
+    }
+  }, [visibleEmployees, selectedEmployeeId, setSelectedEmployeeId]);
+
   const [positionFilter, setPositionFilter] = useState<Position | ''>(manualEmp?.position || '');
 
-  // EPCC (fix-stale-closure-position-filter) — FIX ROOT CAUSE: useEffect trước đây đọc
-  // `manualEmp` từ closure (stale), nên khi đổi NV nhanh thì position vẫn hiện của NV cũ.
-  // Fix: tính position trực tiếp từ `employees` array bên trong effect dùng `empId` mới nhất,
-  // tránh hoàn toàn vấn đề stale closure.
   useEffect(() => {
-    const emp = employees.find((e) => e.id === manualEmpId) || employees[0];
+    const emp = visibleEmployees.find((e) => e.id === manualEmpId) || visibleEmployees[0] || employees[0];
     setPositionFilter(emp?.position || '');
-  }, [manualEmpId, employees]);
+  }, [manualEmpId, visibleEmployees, employees]);
 
   const selectedEmpPosition: Position | undefined = positionFilter || undefined;
 
@@ -438,8 +425,8 @@ export const SettingsTab: React.FC = () => {
                 onChange={(e) => setManualEmpId(e.target.value)}
                 className="w-full px-1.5 py-1 text-[11px] bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
               >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName}</option>
+                {visibleEmployees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.id} - {emp.fullName} ({emp.position})</option>
                 ))}
               </select>
             </div>
