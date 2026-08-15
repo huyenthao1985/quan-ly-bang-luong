@@ -254,9 +254,37 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
     e.preventDefault();
     if (!supabase) { setError('Supabase is not initialized'); return; }
     setError(''); setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: resolveLoginEmail(email), password });
+
+    const input = email.trim();
+    let loginError: any = null;
+
+    if (input.includes('@')) {
+      // Nếu user gõ thẳng email
+      const { error } = await supabase.auth.signInWithPassword({ email: input, password });
+      loginError = error;
+    } else {
+      // Thử đăng nhập lần lượt:
+      // 1. Domain cũ @noemail.local (cho KHO, VP và các tài khoản đã tạo trước)
+      // 2. Domain mới @imvina.com (cho các tài khoản mới)
+      const clean = input.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const candidates = [
+        `${clean}@noemail.local`,
+        `${clean}@imvina.com`,
+      ];
+
+      for (const cand of candidates) {
+        const { error } = await supabase.auth.signInWithPassword({ email: cand, password });
+        if (!error) {
+          loginError = null;
+          break;
+        } else {
+          loginError = error;
+        }
+      }
+    }
+
     setLoading(false);
-    if (error) { setError(error.message || t.errGeneric); return; }
+    if (loginError) { setError(loginError.message || t.errGeneric); return; }
     if (rememberMe) {
       localStorage.setItem('imv_remember_email', email.trim());
     } else {
