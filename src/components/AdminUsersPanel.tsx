@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Profile, UserRole } from '../lib/auth';
+import { deriveRoleFromPosition, fetchEmployeeDirectory, type EmployeeDirectoryEntry } from '../lib/auth';
 
 interface AdminUsersPanelProps {
   onClose: () => void;
@@ -63,6 +64,11 @@ export function AdminUsersPanel({ onClose, lang }: AdminUsersPanelProps) {
   const [roleChoice, setRoleChoice] = useState<Record<string, UserRole>>({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  // EPCC (admin-is-s-manager) — danh sách rút gọn nhân viên (id/họ tên/vị trí), dùng để tra
+  // vị trí ứng với profile.employee_id (đã tự liên kết lúc đăng ký, xem signUpEmployee() +
+  // loadProfile() trong lib/auth.ts) — từ đó suy ra role gợi ý bằng deriveRoleFromPosition()
+  // thay vì bắt Admin tự chọn role bằng tay như trước.
+  const [employeeDirectory, setEmployeeDirectory] = useState<EmployeeDirectoryEntry[]>([]);
 
   // ── Đặt lại mật khẩu cho user (khi họ quên mật khẩu) ───────────────────
   const [resetTarget, setResetTarget] = useState<string | null>(null);
@@ -95,20 +101,38 @@ export function AdminUsersPanel({ onClose, lang }: AdminUsersPanelProps) {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.from('profiles').select('*').order('email', { ascending: true });
+    const [{ data, error }, directory] = await Promise.all([
+      supabase.from('profiles').select('*').order('email', { ascending: true }),
+      fetchEmployeeDirectory(),
+    ]);
     if (error) { setErr(error.message); setLoading(false); return; }
     setProfiles((data as Profile[]) || []);
+    setEmployeeDirectory(directory);
     setLoading(false);
   }
 
   useEffect(() => { load(); }, []);
+
+  // EPCC (admin-is-s-manager) — tra vị trí + role gợi ý ('S. Manager' -> Manager, còn lại ->
+  // Staff) từ employee_id đã liên kết sẵn lúc đăng ký. Trả về null nếu tài khoản chưa liên
+  // kết employee_id (tài khoản cũ/tạo tay) — những tài khoản này vẫn dùng dropdown chọn role
+  // thủ công như trước (fallback, không đổi hành vi cũ của họ).
+  function linkedEmployee(p: Profile): EmployeeDirectoryEntry | null {
+    if (!p.employee_id) return null;
+    return employeeDirectory.find((e) => e.id === p.employee_id) ?? null;
+  }
 
   async function approve(id: string) {
     if (!supabase) {
       alert('Supabase is not initialized');
       return;
     }
-    const role = roleChoice[id] || 'user';
+    const linked = profiles.find((p) => p.id === id);
+    const emp = linked ? linkedEmployee(linked) : null;
+    // Tài khoản đã liên kết employee_id -> role LUÔN suy từ vị trí thật (không cho Admin bấm
+    // nhầm role khác vị trí); chưa liên kết -> dùng lựa chọn thủ công trong dropdown (mặc
+    // định 'user' nếu Admin chưa chọn gì).
+    const role = emp ? deriveRoleFromPosition(emp.position) : (roleChoice[id] || 'user');
     const { error } = await supabase.rpc('admin_assign_role', { target_id: id, new_role: role });
     if (error) { alert(error.message); return; }
     load();
@@ -149,22 +173,36 @@ export function AdminUsersPanel({ onClose, lang }: AdminUsersPanelProps) {
               <div style={{ fontSize: '13px', color: 'var(--text-2, #6b7280)', marginBottom: '20px' }}>{t.noPending}</div>
             ) : (
               <div style={{ marginBottom: '20px' }}>
-                {pending.map(p => (
+                {pending.map(p => {
+                  const emp = linkedEmployee(p);
+                  return (
                   <div key={p.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border-soft, #eee)' }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-0, #111827)' }}>{p.full_name}</div>
                         <div style={{ fontSize: '12px', color: 'var(--text-2, #6b7280)' }}>{displayHandle(p)}</div>
                       </div>
-                      <select
-                        value={roleChoice[p.id] || 'user'}
-                        onChange={e => setRoleChoice(r => ({ ...r, [p.id]: e.target.value as UserRole }))}
-                        style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-soft, #e5e7eb)' }}
-                      >
-                        <option value="user">{t.roleUser}</option>
-                        <option value="editor">{t.roleEditor}</option>
-                        <option value="admin">{t.roleAdmin}</option>
-                      </select>
+                      {emp ? (
+                        // EPCC (admin-is-s-manager) — tài khoản đã tự liên kết đúng 1 hồ sơ
+                        // nhân viên lúc đăng ký -> hiện thẳng vị trí + role sẽ được gán khi
+                        // duyệt, KHÔNG cho chọn tay nữa (tránh Admin lỡ gán role sai vị trí).
+                        <span
+                          title="Vị trí lấy từ hồ sơ nhân viên đã đăng ký"
+                          style={{ fontSize: '12px', fontWeight: 700, padding: '6px 10px', borderRadius: '6px', background: 'var(--bg, #f3f4f6)', color: 'var(--text-0, #111827)', whiteSpace: 'nowrap' }}
+                        >
+                          {emp.position} → {roleLabel(deriveRoleFromPosition(emp.position))}
+                        </span>
+                      ) : (
+                        <select
+                          value={roleChoice[p.id] || 'user'}
+                          onChange={e => setRoleChoice(r => ({ ...r, [p.id]: e.target.value as UserRole }))}
+                          style={{ padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-soft, #e5e7eb)' }}
+                        >
+                          <option value="user">{t.roleUser}</option>
+                          <option value="editor">{t.roleEditor}</option>
+                          <option value="admin">{t.roleAdmin}</option>
+                        </select>
+                      )}
                       <button
                         onClick={() => approve(p.id)}
                         style={{ padding: '6px 14px', borderRadius: '6px', border: 'none', background: 'var(--primary, #6366f1)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}
@@ -182,7 +220,8 @@ export function AdminUsersPanel({ onClose, lang }: AdminUsersPanelProps) {
                       onSave={() => resetPassword(p.id)} onCancel={closeReset}
                     />}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

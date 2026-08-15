@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AlertTriangle, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { calculatePayslip, formatVND } from '../../utils/payrollCalculations';
@@ -19,32 +19,45 @@ export const PayslipTab: React.FC = () => {
     currentUser,
     payrollViewPermissions,
     viewerPosition,
+    selectedEmployeeId,
+    setSelectedEmployeeId,
+    authRole,
+    authProfile,
   } = usePayroll();
 
-  const [selectedEmpId, setSelectedEmpId] = useState<string>(employees[0]?.id || '11704029');
+  // EPCC (sync-selected-employee-across-tabs) — dùng selectedEmployeeId từ Context
+  const selectedEmpId = selectedEmployeeId || (employees[0]?.id ?? '');
+  const setSelectedEmpId = setSelectedEmployeeId;
   const printRef = useRef<HTMLDivElement>(null);
 
-  // EPCC (payroll-view-permission-matrix) — FIX: dropdown "Nhân viên" trước đây show TẤT
-  // CẢ nhân viên không lọc gì (ai cũng xem được lương bất kỳ ai). Giờ lọc theo hồ sơ nhân
-  // viên gắn với currentUser (viewerPosition, suy ra từ currentUser.employeeId trong
-  // PayrollContext) đối chiếu ma trận payrollViewPermissions; Admin luôn xem được toàn bộ,
-  // không giới hạn.
-  const allowedPositions = activeRole === 'Admin'
+  // EPCC (payroll-employee-login-access) — kiểm tra quyền quản trị toàn bộ
+  const isFullAdmin = authRole === 'admin' ||
+    authProfile?.email?.toLowerCase().includes('vp') ||
+    authProfile?.email?.toLowerCase().includes('kho') ||
+    authProfile?.username?.toLowerCase() === 'vp' ||
+    authProfile?.username?.toLowerCase() === 'kho' ||
+    activeRole === 'Admin';
+
+  const allowedPositions = isFullAdmin
     ? undefined
     : (viewerPosition ? (payrollViewPermissions[viewerPosition] || [viewerPosition]) : []);
 
-  const visibleEmployees = allowedPositions
-    ? employees.filter((emp) => allowedPositions.includes(emp.position))
-    : employees;
+  // Nhân viên thông thường chỉ xem được bảng lương của chính mình (qua authProfile.employee_id)
+  const visibleEmployees = isFullAdmin
+    ? employees
+    : (authProfile?.employee_id
+        ? employees.filter((emp) => emp.id === authProfile.employee_id)
+        : (allowedPositions
+            ? employees.filter((emp) => allowedPositions.includes(emp.position))
+            : employees));
 
-  // Nếu nhân viên đang chọn bị lọc mất quyền xem (vd đổi activeRole để test), tự chuyển
-  // về nhân viên đầu tiên hợp lệ trong danh sách được phép xem.
   useEffect(() => {
-    if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
+    if (!isFullAdmin && authProfile?.employee_id) {
+      setSelectedEmpId(authProfile.employee_id);
+    } else if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
       setSelectedEmpId(visibleEmployees[0].id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeRole, viewerPosition]);
+  }, [authProfile?.employee_id, isFullAdmin, visibleEmployees, selectedEmpId, setSelectedEmpId]);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId) || employees[0];
 
@@ -205,20 +218,30 @@ export const PayslipTab: React.FC = () => {
           </div>
           <div className="p-1.5 flex items-center gap-2">
             <span>Lương CB cũ:</span>
-            <FormattedNumberInput
-              value={selectedEmp.baseSalary || 0}
-              onChange={(v) => handleBaseSalaryChange(v)}
-              className="w-28 px-2 py-0.5 bg-white dark:bg-slate-900 border border-blue-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none text-right"
-            />
+            {isFullAdmin ? (
+              <FormattedNumberInput
+                value={selectedEmp.baseSalary || 0}
+                onChange={(v) => handleBaseSalaryChange(v)}
+                className="w-28 px-2 py-0.5 bg-white dark:bg-slate-900 border border-blue-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none text-right"
+              />
+            ) : (
+              <span className="font-bold text-slate-900 dark:text-slate-100">{formatVND(selectedEmp.baseSalary || 0)}</span>
+            )}
           </div>
           <div className="p-1.5 flex items-center gap-2">
             <span>Lương CB mới:</span>
-            <FormattedNumberInput
-              value={selectedEmp.insuranceBaseSalary || 0}
-              onChange={(v) => handleInsuranceBaseSalaryChange(v)}
-              placeholder="= Lương CB cũ nếu để trống"
-              className="w-32 px-2 py-0.5 bg-white dark:bg-slate-900 border border-emerald-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none text-right"
-            />
+            {isFullAdmin ? (
+              <FormattedNumberInput
+                value={selectedEmp.insuranceBaseSalary || 0}
+                onChange={(v) => handleInsuranceBaseSalaryChange(v)}
+                placeholder="= Lương CB cũ nếu để trống"
+                className="w-32 px-2 py-0.5 bg-white dark:bg-slate-900 border border-emerald-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none text-right"
+              />
+            ) : (
+              <span className="font-bold text-emerald-700 dark:text-emerald-400">
+                {selectedEmp.insuranceBaseSalary ? formatVND(selectedEmp.insuranceBaseSalary) : formatVND(selectedEmp.baseSalary || 0)}
+              </span>
+            )}
           </div>
         </div>
 

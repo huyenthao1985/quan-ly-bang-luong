@@ -2,12 +2,7 @@ import React, { useState } from 'react';
 import { Settings as SettingsIcon, Wallet } from 'lucide-react';
 import { SettingsTab } from './SettingsTab';
 import { PayslipTab } from './PayslipTab';
-
-// EPCC (merge-settings-payslip-menu) — hợp lý hoá theo yêu cầu người dùng:
-// gộp 2 mục sidebar "CÀI ĐẶT" và "BẢNG LƯƠNG IM" thành 1 mục duy nhất
-// "BẢNG LƯƠNG", bên trong chia 2 sheet con (Cài đặt / Bảng lương) chuyển
-// đổi bằng toggle nội bộ, tái sử dụng nguyên vẹn 2 component cũ
-// SettingsTab và PayslipTab không đổi logic bên trong.
+import { usePayroll } from '../../context/PayrollContext';
 
 type PayrollSubTab = 'settings' | 'payslip';
 
@@ -17,11 +12,29 @@ const SUB_TABS: { id: PayrollSubTab; label: string; icon: any }[] = [
 ];
 
 export const PayrollTab: React.FC = () => {
-  const [subTab, setSubTab] = useState<PayrollSubTab>('settings');
+  const { authRole, authProfile } = usePayroll();
+
+  // Kiểm tra quyền quản trị: Manager (admin) hoặc tài khoản ngoại lệ VP / KHO
+  const isManager = authRole === 'admin' ||
+    authProfile?.email?.toLowerCase().includes('vp') ||
+    authProfile?.email?.toLowerCase().includes('kho') ||
+    authProfile?.username?.toLowerCase() === 'vp' ||
+    authProfile?.username?.toLowerCase() === 'kho';
+
+  const [subTab, setSubTab] = useState<PayrollSubTab>(isManager ? 'settings' : 'payslip');
+
+  // Với nhân viên thông thường (Staff/OP), chỉ hiển thị Bảng lương cá nhân, ẩn sheet Cài đặt hệ thống
+  if (!isManager) {
+    return (
+      <div className="space-y-[2mm]">
+        <PayslipTab />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-[2mm]">
-      {/* ── Sheet toggle — cùng phong cách với thanh chuyển view của AttendanceTab ── */}
+      {/* ── Sheet toggle cho Manager/VP/KHO ── */}
       <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
         <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
           {SUB_TABS.map(({ id, label, icon: Icon }) => (
@@ -38,3 +51,4 @@ export const PayrollTab: React.FC = () => {
     </div>
   );
 };
+

@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+// EPCC (employee-name-password-signup) — theo yêu cầu người dùng: form Đăng ký đổi từ "gõ ID
+// + Họ tên tự do" sang "CHỌN Họ tên nhân viên có sẵn trong hồ sơ + đặt mật khẩu". Dùng lại
+// fetchEmployeeDirectory (view an toàn, chỉ lộ id/họ tên/vị trí) + signUpEmployee (Supabase
+// Auth thật, mật khẩu băm bcrypt server-side) từ lib/auth.ts — KHÔNG tự chế xác thực client.
+import { fetchEmployeeDirectory, signUpEmployee, type EmployeeDirectoryEntry } from '../lib/auth';
 // EPCC (login-bg-photo) — theo yêu cầu người dùng: dùng ảnh Sa Pa (thị trấn
 // trong mây) làm nền trang đăng nhập, thay cho gradient tạm trước đây.
 // Đặt file tại src/assets/login-bg.png (copy file login-bg.png đính kèm vào
@@ -7,15 +12,13 @@ import { supabase } from '../lib/supabase';
 // sửa code.
 import loginBg from '../assets/login-bg.png';
 
-// EPCC (username-login) — cho phép đăng nhập bằng username (vd: "Kho",
-// "VP") thay vì email thật. Nếu chuỗi nhập vào không có "@" thì hiểu là
-// username và tự map sang email ẩn "<username>@noemail.local" trước khi
-// gọi Supabase Auth. Tài khoản dùng email thật vẫn đăng nhập bình thường
-// (có "@" thì giữ nguyên). CHỈ áp dụng cho form login — form đăng ký (mode
-// 'register') vẫn bắt buộc email thật, không đụng vào.
+// EPCC (username-login) — cho phép đăng nhập bằng username / Mã NV (vd: "11704029", "Kho", "VP")
+// thay vì email thật. Tự map sang email ẩn hợp lệ "<id>@imvina.com" trước khi gọi Supabase Auth.
 function resolveLoginEmail(input: string) {
   const v = input.trim();
-  return v.includes('@') ? v : `${v.toLowerCase()}@noemail.local`;
+  if (v.includes('@')) return v;
+  const clean = v.toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  return `${clean}@imvina.com`;
 }
 // EPCC (login-bg-photo) — đã có ảnh nền thật (src/assets/login-bg.png,
 // xem import loginBg ở trên), ghép vào cuối 2 dòng backgroundImage bên
@@ -49,7 +52,10 @@ const TXT = {
     btnSignIn: 'Đăng nhập',
     footNote: 'Chưa có tài khoản?', signup: 'Đăng ký',
     registerTitle: 'Tạo tài khoản mới', registerSub: 'Đăng ký để chờ admin phân quyền',
-    labelFullname: 'Họ và tên', placeholderFullname: 'Nhập họ và tên',
+    labelFullname: 'Họ tên nhân viên', placeholderFullname: '-- Chọn tên của bạn --',
+    loadingEmployees: 'Đang tải danh sách nhân viên...',
+    noEmployees: 'Không tải được danh sách nhân viên. Vui lòng thử lại sau.',
+    errNoEmployee: 'Vui lòng chọn tên của bạn trong danh sách.',
     labelConfirmPass: 'Xác nhận mật khẩu', placeholderConfirmPass: 'Nhập lại mật khẩu',
     btnRegister: 'Đăng ký',
     haveAccount: 'Đã có tài khoản?', backToLogin: 'Đăng nhập',
@@ -72,7 +78,10 @@ const TXT = {
     btnSignIn: 'Sign In',
     footNote: "Don't have an account?", signup: 'Sign up',
     registerTitle: 'Create new account', registerSub: 'Sign up and wait for admin approval',
-    labelFullname: 'Full name', placeholderFullname: 'Enter your full name',
+    labelFullname: 'Employee name', placeholderFullname: '-- Select your name --',
+    loadingEmployees: 'Loading employee list...',
+    noEmployees: 'Could not load the employee list. Please try again later.',
+    errNoEmployee: 'Please select your name from the list.',
     labelConfirmPass: 'Confirm password', placeholderConfirmPass: 'Re-enter password',
     btnRegister: 'Sign Up',
     haveAccount: 'Already have an account?', backToLogin: 'Sign in',
@@ -95,7 +104,10 @@ const TXT = {
     btnSignIn: '로그인',
     footNote: '계정이 없으신가요?', signup: '회원가입',
     registerTitle: '새 계정 만들기', registerSub: '가입 후 관리자의 승인을 기다려주세요',
-    labelFullname: '이름', placeholderFullname: '이름을 입력하세요',
+    labelFullname: '직원 이름', placeholderFullname: '-- 이름 선택 --',
+    loadingEmployees: '직원 목록을 불러오는 중...',
+    noEmployees: '직원 목록을 불러오지 못했습니다. 나중에 다시 시도해 주세요.',
+    errNoEmployee: '목록에서 본인 이름을 선택해 주세요.',
     labelConfirmPass: '비밀번호 확인', placeholderConfirmPass: '비밀번호를 다시 입력하세요',
     btnRegister: '가입하기',
     haveAccount: '이미 계정이 있으신가요?', backToLogin: '로그인',
@@ -184,13 +196,30 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // EPCC (employee-name-password-signup) — danh sách rút gọn nhân viên (id/họ tên/vị trí)
+  // cho dropdown "chọn Họ tên" ở form Đăng ký — tải LƯỜI (chỉ khi mode==='register' lần đầu),
+  // vì đây là gọi mạng, không cần tải sẵn khi vào form Đăng nhập.
+  const [employeeDirectory, setEmployeeDirectory] = useState<EmployeeDirectoryEntry[]>([]);
+  const [employeeDirLoading, setEmployeeDirLoading] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+
+  useEffect(() => {
+    if (mode !== 'register' || employeeDirectory.length > 0 || employeeDirLoading) return;
+    setEmployeeDirLoading(true);
+    fetchEmployeeDirectory().then((list) => {
+      setEmployeeDirectory(list);
+      setEmployeeDirLoading(false);
+    });
+  }, [mode, employeeDirectory.length, employeeDirLoading]);
+
+  const selectedEmployee = employeeDirectory.find((e) => e.id === selectedEmployeeId) || null;
 
   // FIX (bg-parallax): tọa độ chuột (đã chuẩn hoá -1..1) để dịch nhẹ ảnh nền
   // theo hướng ngược chiều con trỏ, tạo cảm giác chiều sâu 3D giả lập —
@@ -240,25 +269,28 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
     e.preventDefault();
     if (!supabase) { setError('Supabase is not initialized'); return; }
     setError(''); setNotice('');
+    // EPCC (employee-name-password-signup) — bắt buộc phải CHỌN đúng 1 nhân viên trong danh
+    // sách (không cho gõ tay email/họ tên tự do như trước) — đây chính là bước "chọn Họ tên
+    // nhân viên" người dùng yêu cầu.
+    if (!selectedEmployee) { setError(t.errNoEmployee); return; }
     if (password !== confirm) { setError(t.errMismatch); return; }
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-      options: { data: { full_name: fullName.trim() } },
-    });
-
-    if (error) { setLoading(false); setError(error.message || t.errGeneric); return; }
-
-    if (data.user) {
-      await supabase.from('profiles').insert({
-        id: data.user.id, full_name: fullName.trim(), email: email.trim(), role: null,
-      });
-    }
+    // signUpEmployee (lib/auth.ts) tự build email ẩn từ mã NV + gọi Supabase Auth thật +
+    // gắn employee_id/position vào user_metadata — loadProfile() (useAuthGate) sẽ tự đọc
+    // metadata này để liên kết employee_id ngay lúc tạo hồ sơ, KHÔNG cần insert tay ở đây
+    // nữa (tránh insert trùng/đụng độ với loadProfile).
+    const { error: signUpError, hasSession } = await signUpEmployee(
+      selectedEmployee.id,
+      selectedEmployee.full_name,
+      selectedEmployee.position,
+      password
+    );
 
     setLoading(false);
-    if (data.session) {
+    if (signUpError) { setError(signUpError || t.errGeneric); return; }
+
+    if (hasSession) {
       setNotice(t.autoIn);
     } else {
       setNotice(t.checkEmail);
@@ -367,21 +399,42 @@ export function LoginGate({ lang, setLang }: LoginGateProps) {
             {mode === 'register' && (
               <div className="imv-field">
                 <label>{t.labelFullname}</label>
-                <input required placeholder={t.placeholderFullname} value={fullName} onChange={e => setFullName(e.target.value)} />
+                <div className="imv-input-wrap">
+                  <span className="imv-input-icon"><UserIdIcon /></span>
+                  {employeeDirLoading ? (
+                    <div style={{ fontSize: '13px', color: 'var(--imv-ink-soft)', padding: '12px 14px 12px 38px' }}>{t.loadingEmployees}</div>
+                  ) : employeeDirectory.length === 0 ? (
+                    <div style={{ fontSize: '13px', color: '#b91c1c', padding: '12px 14px 12px 38px' }}>{t.noEmployees}</div>
+                  ) : (
+                    <select
+                      required
+                      className="imv-input-has-icon"
+                      value={selectedEmployeeId}
+                      onChange={e => setSelectedEmployeeId(e.target.value)}
+                    >
+                      <option value="">{t.placeholderFullname}</option>
+                      {employeeDirectory.map((emp) => (
+                        <option key={emp.id} value={emp.id}>{emp.full_name} — {emp.position}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             )}
-            <div className="imv-field">
-              <label>{t.labelEmail}</label>
-              <div className="imv-input-wrap">
-                <span className="imv-input-icon"><UserIdIcon /></span>
-                <input
-                  className="imv-input-has-icon"
-                  required type="text" autoComplete="username"
-                  placeholder={t.placeholderEmail} value={email}
-                  onChange={e => setEmail(e.target.value)}
-                />
+            {mode === 'login' && (
+              <div className="imv-field">
+                <label>{t.labelEmail}</label>
+                <div className="imv-input-wrap">
+                  <span className="imv-input-icon"><UserIdIcon /></span>
+                  <input
+                    className="imv-input-has-icon"
+                    required type="text" autoComplete="username"
+                    placeholder={t.placeholderEmail} value={email}
+                    onChange={e => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
             <div className="imv-field">
               <label>{t.labelPass}</label>
               <div className="imv-input-wrap">
@@ -605,14 +658,15 @@ const IMV_CSS = `
   display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.08em;
   text-transform:uppercase; color: var(--imv-ink-soft); margin-bottom:7px;
 }
-.imv-field input{
+.imv-field input, .imv-field select{
   width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(75,83,97,0.25);
   background: rgba(255,255,255,0.55); font-family:'Inter', sans-serif; font-size:14px;
   color: var(--imv-ink); outline:none; box-sizing:border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
+.imv-field select{ cursor:pointer; appearance:auto; }
 .imv-field input::placeholder{ color: rgba(69,75,87,0.45); }
-.imv-field input:focus{
+.imv-field input:focus, .imv-field select:focus{
   border-color: var(--imv-brass); background: rgba(255,255,255,0.85);
   box-shadow: 0 0 0 3px rgba(201,162,74,0.18);
 }

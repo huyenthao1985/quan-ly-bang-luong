@@ -33,7 +33,7 @@ const MainContent: React.FC = () => {
         // cho tài khoản VP (xem TAB_ACCESS_EXCEPTIONS trong lib/auth.ts) —
         // role khác/không thuộc diện ngoại lệ sẽ thấy AccessDenied thay vì
         // nội dung bảng lương, dù có gõ trực tiếp activeTab='settings'.
-        canAccessTab('settings', authRole, authProfile?.email)
+        canAccessTab('settings', authRole, authProfile?.email, authProfile?.username)
           ? <PayrollTab />
           : <AccessDenied lang="vi" />
       )}

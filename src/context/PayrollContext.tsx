@@ -37,6 +37,10 @@ interface ToastMessage {
 interface PayrollContextType {
   employees: Employee[];
   salaryConfig: SalaryConfig;
+  // EPCC (sync-selected-employee-across-tabs) — nhân viên đang chọn dùng chung giữa
+  // SettingsTab và PayslipTab: khi đổi tên ở Cài đặt thì Bảng lương tự đổi theo và ngược lại.
+  selectedEmployeeId: string;
+  setSelectedEmployeeId: (id: string) => void;
   // EPCC (payroll-view-permission-matrix) — ma trận phân quyền xem Bảng lương theo vị trí,
   // chỉ Admin được sửa (xem updatePayrollViewPermissions). viewerPosition là vị trí THẬT
   // của currentUser, suy ra từ Employee gắn với currentUser.employeeId — không phải chọn tay.
@@ -167,12 +171,14 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
   const [activeRole, setActiveRole] = useState<UserRole>('Admin');
   const [currentUser, setCurrentUser] = useState<User>(SAMPLE_USERS[0]);
 
-  // EPCC (checkin-sets-viewer-identity) — vị trí THẬT của người đang dùng app: ưu tiên
-  // hồ sơ gắn với currentUser.employeeId (nếu Admin đã cấu hình User/Leader mẫu có sẵn
-  // employeeId cụ thể); nếu chưa có, fallback sang employeeId của người VỪA TỰ ĐIỂM DANH
-  // gần nhất trên thiết bị này (lastCheckedInEmployeeId, set ở AttendanceTab.doSave()) —
-  // theo đúng yêu cầu "điểm danh xong thì mặc định ở vị trí đó".
-  const viewerEmployeeId = currentUser.employeeId || lastCheckedInEmployeeId;
+  // EPCC (checkin-sets-viewer-identity) — vị trí THẬT của người đang dùng app. Thứ tự ưu
+  // tiên: (1) authProfile.employee_id — hồ sơ nhân viên đã LIÊN KẾT THẬT với tài khoản đăng
+  // nhập lúc đăng ký (xem signUpEmployee()/loadProfile() trong lib/auth.ts, employee-name-
+  // password-signup) — đáng tin nhất vì đi kèm mật khẩu thật; (2) currentUser.employeeId
+  // (User/Leader mẫu do Admin cấu hình tay, hệ thống demo activeRole cũ); (3)
+  // lastCheckedInEmployeeId — người VỪA TỰ ĐIỂM DANH gần nhất trên thiết bị này (fallback
+  // cuối, cho các tài khoản chưa liên kết employee_id).
+  const viewerEmployeeId = authProfile.employee_id || currentUser.employeeId || lastCheckedInEmployeeId;
   const viewerPosition = employees.find((e) => e.id === viewerEmployeeId)?.position;
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -183,6 +189,8 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
   const [selectedMonth, setSelectedMonth] = useState<number>(8);
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [activeTab, setActiveTab] = useState<string>('employees');
+  // EPCC (sync-selected-employee-across-tabs) — khởi tạo từ nhân viên đầu tiên trong danh sách
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   /**
@@ -570,6 +578,13 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
     showToast('Đã lưu phân quyền xem Bảng lương theo vị trí!');
   };
 
+  // EPCC (sync-selected-employee-across-tabs) — khởi tạo selectedEmployeeId khi employees load xong
+  useEffect(() => {
+    if (selectedEmployeeId === '' && employees.length > 0) {
+      setSelectedEmployeeId(employees[0].id);
+    }
+  }, [employees, selectedEmployeeId]);
+
   return (
     <PayrollContext.Provider
       value={{
@@ -591,6 +606,8 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
         activeTab,
         toasts,
         isDbLoading,
+        selectedEmployeeId,
+        setSelectedEmployeeId,
 
         setTheme,
         toggleTheme,

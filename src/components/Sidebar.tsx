@@ -1,14 +1,10 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { Sun, Moon, Shield, UserCheck, Users, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
+import { Sun, Moon, Shield, UserCheck, Users, ChevronRight, ChevronLeft, LogOut, UserCog } from 'lucide-react';
 import { usePayroll } from '../context/PayrollContext';
 import { UserRole } from '../types/payroll';
-// EPCC (payroll-simple-role-gate) — canAccessTab/ROLE_LABEL đến từ đăng
-// nhập THẬT (lib/auth.ts), khác UserRole('Admin'|'Leader'|'User') phía trên
-// vốn là role giả lập — Sidebar dùng canAccessTab để ẨN mục "BẢNG LƯƠNG"
-// khỏi menu nếu authRole không phải Manager (phòng vệ kép, cùng với gate
-// chính ở MainContent trong App.tsx).
 import { canAccessTab, ROLE_LABEL } from '../lib/auth';
+import { AdminUsersPanel } from './AdminUsersPanel';
 
 // EPCC (move-controls-to-sidebar) — hợp lý hoá theo yêu cầu người dùng: 3
 // khối "Quyền / User badge / Theme toggle" trước đây nằm ở Header (trùng
@@ -50,11 +46,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
   } = usePayroll() as any;
   const RoleIcon = ROLE_META[activeRole as UserRole].icon;
   const [reopenHover, setReopenHover] = React.useState(false);
+  const [showAdminPanel, setShowAdminPanel] = React.useState(false);
 
   // EPCC (payroll-simple-role-gate) — ẩn hẳn mục "BẢNG LƯƠNG" (id 'settings')
   // khỏi menu nếu role thật (authRole) không phải Manager, để không hiện
   // 1 mục bấm vào rồi mới báo "không có quyền" — mất công user bấm nhầm.
-  const visibleItems = ITEMS.filter((item) => canAccessTab(item.id, authRole, authProfile?.email));
+  const visibleItems = ITEMS.filter((item) => canAccessTab(item.id, authRole, authProfile?.email, authProfile?.username));
 
   // FIX (keep-sidebar-state-on-select): trước đây chọn menu xong tự gọi
   // onClose?.() để đóng Sidebar lại (hành vi off-canvas). Theo yêu cầu
@@ -247,6 +244,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff', flex: 1 }}>
               {ROLE_LABEL[authRole as keyof typeof ROLE_LABEL]?.vi ?? authRole}
             </span>
+            {authRole === 'admin' && (
+              <button
+                onClick={() => setShowAdminPanel(true)}
+                title="Quản lý & duyệt tài khoản"
+                aria-label="Quản lý tài khoản"
+                style={{
+                  border: 'none', background: 'transparent', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', padding: '2px',
+                }}
+              >
+                <UserCog size={14} color="#cfdc00" />
+              </button>
+            )}
             <button
               onClick={signOutAuth}
               title="Đăng xuất"
@@ -311,7 +321,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
           {theme === 'dark' ? 'Sáng' : 'Tối'}
         </button>
       </div>
-    </aside>
+      </aside>
+      {showAdminPanel && (
+        <AdminUsersPanel onClose={() => setShowAdminPanel(false)} lang="vi" />
+      )}
     </>
   );
 };
