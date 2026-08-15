@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Save, Shield, Percent, DollarSign, Award, Receipt, UserCheck, UserX, CheckCircle, RefreshCw } from 'lucide-react';
+import { Settings, Save, Shield, Percent, DollarSign, Award, Receipt, UserCheck, UserX, CheckCircle, RefreshCw, KeyRound, Users, Lock, Eye, EyeOff, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { Position, PositionAllowanceConfig, SalaryConfig } from '../../types/payroll';
 import { formatVND, calculatePayslip } from '../../utils/payrollCalculations';
@@ -31,10 +31,15 @@ export const SettingsTab: React.FC = () => {
 
   const [config, setConfig] = useState<SalaryConfig>({ ...salaryConfig });
 
-  // Quản lý & duyệt tài khoản người dùng đăng ký
+  // Quản lý & duyệt tài khoản người dùng đăng ký & Reset password
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loadingProfiles, setLoadingProfiles] = useState(false);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [userTab, setUserTab] = useState<'pending' | 'all'>('pending');
+  const [resetTargetId, setResetTargetId] = useState<string | null>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [showResetPass, setShowResetPass] = useState(false);
+  const [resetBusy, setResetBusy] = useState(false);
 
   const loadProfiles = async () => {
     if (!supabase) return;
@@ -94,6 +99,40 @@ export const SettingsTab: React.FC = () => {
     await supabase.from('profiles').delete().eq('id', profile.id);
     showToast(`Đã xóa yêu cầu của ${profile.full_name}`);
     loadProfiles();
+  };
+
+  const handleResetPassword = async (targetId: string, newPass: string) => {
+    if (!supabase) return;
+    if (!newPass || newPass.length < 6) {
+      showToast('Mật khẩu mới phải có ít nhất 6 ký tự!', 'error');
+      return;
+    }
+    setResetBusy(true);
+    let success = false;
+    let errorMsg = '';
+
+    try {
+      const { error } = await supabase.rpc('admin_reset_password', {
+        target_id: targetId,
+        new_password: newPass,
+      });
+      if (!error) {
+        success = true;
+      } else {
+        errorMsg = error.message;
+      }
+    } catch (e: any) {
+      errorMsg = e?.message || 'Lỗi kết nối';
+    }
+
+    setResetBusy(false);
+    if (success) {
+      showToast('Đã đặt lại mật khẩu mới cho nhân viên thành công!');
+      setResetTargetId(null);
+      setNewPasswordInput('');
+    } else {
+      showToast(`Không thể đặt lại mật khẩu: ${errorMsg}`, 'error');
+    }
   };
 
   // EPCC (payroll-view-permission-matrix) — state cục bộ cho ma trận phân quyền xem Bảng
@@ -322,89 +361,234 @@ export const SettingsTab: React.FC = () => {
 
   return (
     <div className="space-y-[2mm]">
-      {/* ── Khối Phê duyệt tài khoản nhân viên mới đăng ký (Chỉ dành cho Admin) ── */}
+      {/* ── Khối Quản lý Tài khoản & Phê duyệt & Đặt lại Mật khẩu (Dành cho Admin) ── */}
       {authRole === 'admin' && (
-        <div className={`p-3 rounded-lg shadow-sm border transition-all ${
-          pendingUsers.length > 0
-            ? 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700'
-            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-        }`}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
             <div className="flex items-center gap-2">
-              <UserCheck className={`w-4 h-4 ${pendingUsers.length > 0 ? 'text-amber-600 dark:text-amber-400 animate-bounce' : 'text-blue-600'}`} />
-              <h3 className="font-bold text-xs text-slate-800 dark:text-slate-100">
-                Phê Duyệt Tài Khoản Đăng Ký Xem Bảng Lương
+              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <h3 className="font-bold text-xs text-slate-800 dark:text-slate-100 uppercase tracking-wide">
+                Quản Lý Tài Khoản &amp; Đặt Lại Mật Khẩu (Admin)
               </h3>
-              {pendingUsers.length > 0 ? (
-                <span className="px-2 py-0.5 text-[11px] font-black bg-red-500 text-white rounded-full animate-pulse">
-                  {pendingUsers.length} tài khoản chờ duyệt
-                </span>
-              ) : (
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                  Đã duyệt tất cả
-                </span>
-              )}
             </div>
-            <button
-              type="button"
-              onClick={loadProfiles}
-              disabled={loadingProfiles}
-              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
-            >
-              <RefreshCw className={`w-3 h-3 ${loadingProfiles ? 'animate-spin' : ''}`} />
-              <span>Làm mới</span>
-            </button>
+
+            <div className="flex items-center gap-2">
+              <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-900 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setUserTab('pending')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded font-semibold transition-all ${
+                    userTab === 'pending'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Chờ duyệt</span>
+                  {pendingUsers.length > 0 && (
+                    <span className="px-1.5 py-0.2 text-[10px] bg-red-600 text-white rounded-full font-black animate-pulse">
+                      {pendingUsers.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserTab('all')}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded font-semibold transition-all ${
+                    userTab === 'all'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
+                  }`}
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Tất cả tài khoản ({profiles.length})</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={loadProfiles}
+                disabled={loadingProfiles}
+                className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+              >
+                <RefreshCw className={`w-3 h-3 ${loadingProfiles ? 'animate-spin' : ''}`} />
+                <span>Làm mới</span>
+              </button>
+            </div>
           </div>
 
-          {pendingUsers.length > 0 && (
-            <div className="mt-2.5 space-y-2 border-t border-amber-200 dark:border-amber-800/60 pt-2">
-              <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
-                Bấm nút <strong>"✓ Duyệt (Confirm)"</strong> màu xanh để cấp quyền cho nhân viên đăng nhập:
-              </p>
+          {/* TAB 1: Danh sách tài khoản chờ duyệt */}
+          {userTab === 'pending' && (
+            <div>
+              {pendingUsers.length === 0 ? (
+                <div className="py-3 px-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <span>Không có tài khoản nào đang chờ phê duyệt. Tất cả người dùng đã được kích hoạt!</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                    Bấm nút <strong>"✓ Duyệt"</strong> để kích hoạt quyền xem bảng lương cho nhân viên:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {pendingUsers.map((user) => {
+                      const emp = employees.find((e) => e.id === user.employee_id);
+                      const suggestedRole = emp ? deriveRoleFromPosition(emp.position) : 'user';
+                      const isApproving = approvingId === user.id;
+
+                      return (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between gap-2 p-2.5 bg-amber-50/60 dark:bg-slate-900 rounded-lg border border-amber-300 dark:border-amber-700 shadow-sm"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                              {user.full_name}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                              <span className="font-semibold text-blue-600 dark:text-blue-400">
+                                {emp?.position || 'Nhân viên'}
+                              </span>
+                              <span>•</span>
+                              <span>Mã: {user.employee_id || user.email.split('@')[0]}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isApproving}
+                              onClick={() => handleApproveUser(user, suggestedRole)}
+                              className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-sm transition-all cursor-pointer"
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                              <span>{isApproving ? 'Đang duyệt…' : '✓ Duyệt'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRejectUser(user)}
+                              title="Xóa/Từ chối yêu cầu"
+                              className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors"
+                            >
+                              <UserX className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: Tất cả tài khoản & Reset Password */}
+          {userTab === 'all' && (
+            <div className="space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {pendingUsers.map((user) => {
+                {profiles.map((user) => {
                   const emp = employees.find((e) => e.id === user.employee_id);
-                  const suggestedRole = emp ? deriveRoleFromPosition(emp.position) : 'user';
-                  const isApproving = approvingId === user.id;
+                  const isResetting = resetTargetId === user.id;
 
                   return (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-amber-300 dark:border-amber-700 shadow-sm"
+                      className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between gap-2"
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                          {user.full_name}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                            <span>{user.full_name}</span>
+                            {user.role === 'admin' ? (
+                              <span className="px-1.5 py-0.2 bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 text-[10px] rounded font-bold">Admin</span>
+                            ) : user.role ? (
+                              <span className="px-1.5 py-0.2 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] rounded font-semibold">Đã duyệt</span>
+                            ) : (
+                              <span className="px-1.5 py-0.2 bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 text-[10px] rounded font-semibold">Chờ duyệt</span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            <span>Mã NV: <strong>{user.employee_id || user.email.split('@')[0]}</strong></span>
+                            {emp && <span className="ml-1.5 text-blue-600 dark:text-blue-400 font-medium">({emp.position})</span>}
+                          </div>
                         </div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                          <span className="font-semibold text-blue-600 dark:text-blue-400">
-                            {emp?.position || 'Nhân viên'}
-                          </span>
-                          <span>•</span>
-                          <span>Mã: {user.employee_id || user.email.split('@')[0]}</span>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          disabled={isApproving}
-                          onClick={() => handleApproveUser(user, suggestedRole)}
-                          className="flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded shadow-sm transition-all cursor-pointer"
-                        >
-                          <CheckCircle className="w-3 h-3" />
-                          <span>{isApproving ? 'Đang duyệt…' : '✓ Duyệt'}</span>
-                        </button>
                         <button
                           type="button"
                           onClick={() => handleRejectUser(user)}
-                          title="Xóa/Từ chối yêu cầu"
+                          title="Xóa tài khoản"
                           className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors"
                         >
                           <UserX className="w-3.5 h-3.5" />
                         </button>
                       </div>
+
+                      {/* Vùng Reset Mật khẩu */}
+                      {isResetting ? (
+                        <div className="mt-1 p-2 bg-blue-50 dark:bg-blue-950/40 rounded border border-blue-200 dark:border-blue-800 space-y-1.5 animate-fadeIn">
+                          <div className="text-[10px] font-bold text-blue-800 dark:text-blue-300 flex items-center justify-between">
+                            <span>Đặt mật khẩu mới:</span>
+                            <button
+                              type="button"
+                              onClick={() => setNewPasswordInput('123456')}
+                              className="text-[10px] text-blue-600 underline font-semibold cursor-pointer"
+                            >
+                              Gợi ý: 123456
+                            </button>
+                          </div>
+                          <div className="relative flex items-center">
+                            <input
+                              type={showResetPass ? 'text' : 'password'}
+                              value={newPasswordInput}
+                              onChange={(e) => setNewPasswordInput(e.target.value)}
+                              placeholder="Nhập mật khẩu mới (>= 6 ký tự)"
+                              className="w-full text-xs px-2 py-1 pr-7 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowResetPass((v) => !v)}
+                              className="absolute right-1.5 text-slate-400 hover:text-slate-600"
+                            >
+                              {showResetPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1.5 pt-0.5">
+                            <button
+                              type="button"
+                              disabled={resetBusy}
+                              onClick={() => handleResetPassword(user.id, newPasswordInput)}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-1 px-2 rounded transition-all cursor-pointer"
+                            >
+                              {resetBusy ? 'Đang lưu…' : 'Lưu mật khẩu'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setResetTargetId(null);
+                                setNewPasswordInput('');
+                              }}
+                              className="px-2 py-1 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-700 dark:text-slate-200 text-[11px] font-semibold rounded cursor-pointer"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-end pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResetTargetId(user.id);
+                              setNewPasswordInput('123456');
+                              setShowResetPass(false);
+                            }}
+                            className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 text-blue-700 dark:text-blue-300 transition-all cursor-pointer"
+                          >
+                            <KeyRound className="w-3 h-3" />
+                            <span>Đổi / Reset Mật khẩu</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
