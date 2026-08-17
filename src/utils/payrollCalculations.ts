@@ -326,7 +326,7 @@ export function calculatePayslip(
   // cấu hình tay trong Cài Đặt.
   const personalDeductionAmount = config.personalDeductionAmount ?? 15_500_000;
   const dependentDeductionAmount = config.dependentDeductionAmount ?? 6_200_000;
-  const numberOfDependents = attendanceRecord?.manualNumberOfDependents ?? employee.numberOfDependents ?? 0;
+  const numberOfDependents = attendanceRecord?.manualNumberOfDependents ?? employee.numberOfDependents ?? employee.dependentsCount ?? 0;
   const totalPersonalDeduction = personalDeductionAmount + numberOfDependents * dependentDeductionAmount;
 
   // ✅ Khớp đúng E76 = MAX(0, D42-E75-E73-E74): dùng thẳng totalIncome (= D42), KHÔNG trừ
@@ -419,6 +419,10 @@ export function calculatePayslip(
     pitExemptAmount, // tham khảo — khớp vai trò E71 trong file, KHÔNG dùng để trừ thuế
     pitExemptHousingSupport,
     pitExemptLanguageSupport,
+    numberOfDependents,
+    personalDeductionAmount,
+    dependentDeductionAmount,
+    totalPersonalDeduction,
     // Ghi chú: field này vẫn tên `attendanceRatio` để không phải sửa type CalculatedPayslip
     // trong types/payroll.ts, nhưng giá trị giờ là allowanceRatio (hệ số phụ cấp theo ngày
     // công chuẩn CỦA THÁNG so với 26 ngày cố định) — không còn là tỷ lệ chấm công cá nhân.

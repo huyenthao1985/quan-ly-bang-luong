@@ -253,6 +253,11 @@ export interface CalculatedPayslip {
   pitExemptHousingSupport: boolean;
   pitExemptLanguageSupport: boolean;
 
+  numberOfDependents?: number; // Số người phụ thuộc dùng tính thuế kỳ này
+  personalDeductionAmount?: number; // Mức giảm trừ bản thân (15.500.000)
+  dependentDeductionAmount?: number; // Mức giảm trừ mỗi người phụ thuộc (6.200.000)
+  totalPersonalDeduction?: number; // Tổng giảm trừ gia cảnh = bản thân + NPT * 6.2tr
+
   attendanceRatio: number; // Hệ số phụ cấp theo ngày công chuẩn của THÁNG (monthStandardDays)
     // so với standardWorkDaysPerMonth cố định — tương ứng tỷ lệ D10/E55 dùng trong D27-D38.
 

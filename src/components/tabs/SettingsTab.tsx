@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Save, Shield, Percent, DollarSign, Award, Receipt } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Settings, Save, Shield, Percent, DollarSign, Award, Receipt, Users } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { Position, PositionAllowanceConfig, SalaryConfig } from '../../types/payroll';
 import { formatVND, calculatePayslip } from '../../utils/payrollCalculations';
@@ -16,6 +16,7 @@ export const SettingsTab: React.FC = () => {
     activeRole,
     showToast,
     employees,
+    updateEmployee,
     attendanceRecords,
     selectedMonth,
     selectedYear,
@@ -124,6 +125,9 @@ export const SettingsTab: React.FC = () => {
   const [manualUnauthorizedAbsence, setManualUnauthorizedAbsence] = useState<number>(
     manualAttendanceRecord?.manualUnauthorizedAbsenceDays ?? 0
   );
+  const [manualDependents, setManualDependents] = useState<number>(
+    manualAttendanceRecord?.manualNumberOfDependents ?? manualEmp?.numberOfDependents ?? manualEmp?.dependentsCount ?? 0
+  );
 
   // Nạp lại giá trị ô nhập khi đổi nhân viên/tháng/năm đang chọn ở mục này, tránh hiện giá
   // trị của nhân viên/tháng trước đó còn sót trong state cục bộ.
@@ -134,8 +138,31 @@ export const SettingsTab: React.FC = () => {
     setManualArrears(manualAttendanceRecord?.manualInsuranceArrears ?? 0);
     setManualOtherDeduction(manualAttendanceRecord?.manualOtherDeduction ?? 0);
     setManualUnauthorizedAbsence(manualAttendanceRecord?.manualUnauthorizedAbsenceDays ?? 0);
+    setManualDependents(manualAttendanceRecord?.manualNumberOfDependents ?? manualEmp?.numberOfDependents ?? manualEmp?.dependentsCount ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manualEmpId, selectedMonth, selectedYear]);
+  }, [manualEmpId, selectedMonth, selectedYear, manualEmp]);
+
+  // Tính toán phiếu lương live cho NV đang chọn theo các thông số nhập tay hiện thời
+  const currentAttendanceForCalc = useMemo(() => ({
+    ...(manualAttendanceRecord || {
+      employeeId: manualEmpId,
+      month: selectedMonth,
+      year: selectedYear,
+      dailyRecords: {},
+    }),
+    manualNumberOfDependents: manualDependents,
+    manualPersonalTax: manualTax.trim() === '' ? undefined : Number(manualTax),
+    manualInsuranceArrears: manualArrears,
+    manualOtherDeduction: manualOtherDeduction,
+    manualFemaleSupportHours: manualFemaleHours,
+    manualTransferredAnnualLeave: manualTransferredLeave,
+    manualUnauthorizedAbsenceDays: manualUnauthorizedAbsence,
+  }), [manualAttendanceRecord, manualEmpId, selectedMonth, selectedYear, manualDependents, manualTax, manualArrears, manualOtherDeduction, manualFemaleHours, manualTransferredLeave, manualUnauthorizedAbsence]);
+
+  const currentManualPayslip = useMemo(() => {
+    if (!manualEmp) return null;
+    return calculatePayslip(manualEmp, currentAttendanceForCalc, config);
+  }, [manualEmp, currentAttendanceForCalc, config]);
 
   const handleResetTaxToAuto = () => {
     setManualTax('');
@@ -166,11 +193,7 @@ export const SettingsTab: React.FC = () => {
     });
   };
 
-  // EPCC (single-save-button) — FIX ROOT CAUSE "2 nút Lưu riêng biệt (Lưu tất cả cấu hình /
-  // Lưu các khoản nhập tay) gây rối, người dùng không rõ bấm nút nào để lưu cái gì": theo
-  // yêu cầu, gộp việc lưu "Nhập tay bổ sung theo nhân viên/tháng" vào chung `handleSave` —
-  // giờ chỉ còn DUY NHẤT 1 nút "Lưu tất cả cấu hình" ở đầu trang, lưu cả salaryConfig lẫn
-  // attendanceRecord override của nhân viên/tháng đang chọn trong mục nhập tay.
+  // EPCC (single-save-button) — Lưu tất cả cấu hình & các khoản nhập tay theo nhân viên
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (activeRole === 'User') {
@@ -186,8 +209,16 @@ export const SettingsTab: React.FC = () => {
       manualInsuranceArrears: manualArrears,
       manualOtherDeduction: manualOtherDeduction,
       manualUnauthorizedAbsenceDays: manualUnauthorizedAbsence,
+      manualNumberOfDependents: manualDependents,
     });
-    showToast('Đã lưu tất cả cấu hình!');
+    if (manualEmp && updateEmployee) {
+      updateEmployee({
+        ...manualEmp,
+        numberOfDependents: manualDependents,
+        dependentsCount: manualDependents,
+      });
+    }
+    showToast('Đã lưu tất cả cấu hình & số người phụ thuộc!');
   };
 
   // Ref luôn giữ config mới nhất để commitAllowance không bị stale closure
@@ -496,6 +527,37 @@ export const SettingsTab: React.FC = () => {
                 Thuế TNCN (2025, hiệu lực 01/7/2026)
               </h4>
 
+              {/* Dòng Số người phụ thuộc trừ thuế (đúng vị trí mũi tên đỏ) */}
+              <div className="flex items-center justify-between gap-2 py-1.5 px-2 mb-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 rounded-lg shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-bold text-amber-950 dark:text-amber-200 leading-tight flex items-center gap-1">
+                    <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    Số người phụ thuộc trừ thuế ({manualEmp?.fullName || manualEmpId})
+                  </span>
+                  <span className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
+                    Mức giảm trừ NPT: {manualDependents} × {formatVND(config.dependentDeductionAmount ?? 6_200_000)} = <strong className="text-amber-900 dark:text-amber-200">{formatVND(manualDependents * (config.dependentDeductionAmount ?? 6_200_000))}</strong>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={manualDependents}
+                    onChange={(e) => {
+                      const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                      setManualDependents(val);
+                      updateAttendanceManualOverrides(manualEmpId, { manualNumberOfDependents: val });
+                      if (manualEmp && updateEmployee) {
+                        updateEmployee({ ...manualEmp, numberOfDependents: val, dependentsCount: val });
+                      }
+                    }}
+                    className="w-16 text-center px-1 py-1 text-xs bg-white dark:bg-slate-900 border-2 border-amber-400 dark:border-amber-600 rounded-md text-slate-900 dark:text-slate-100 font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                  <span className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">người</span>
+                </div>
+              </div>
+
               {([
                 { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
                   value: config.personalDeductionAmount ?? 15_500_000,
@@ -514,7 +576,21 @@ export const SettingsTab: React.FC = () => {
                 </div>
               ))}
 
-              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+              {/* Banner liên kết công thức giảm trừ gia cảnh & thuế tự tính */}
+              <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-900/60 rounded-md border border-slate-200 dark:border-slate-700 text-[10.5px] text-slate-600 dark:text-slate-300 space-y-1">
+                <div className="flex justify-between items-center">
+                  <span>Tổng giảm trừ gia cảnh ({manualEmp?.fullName || manualEmpId}):</span>
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                    {formatVND((config.personalDeductionAmount ?? 15_500_000) + manualDependents * (config.dependentDeductionAmount ?? 6_200_000))}
+                  </strong>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400">
+                  <span>Công thức liên kết:</span>
+                  <span>15.500.000 + ({manualDependents} × 6.200.000)</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
                 <label className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 cursor-pointer">
                   <input
                     id="pitExemptHousing"
@@ -551,7 +627,7 @@ export const SettingsTab: React.FC = () => {
                   <FormattedNumberInput
                     value={manualTax ? Number(manualTax) : 0}
                     onChange={(v) => setManualTax(v === 0 ? '' : String(v))}
-                    placeholder={manualPayslip ? formatVND(manualPayslip.pitAutoCalculated) : ''}
+                    placeholder={currentManualPayslip ? formatVND(currentManualPayslip.pitAutoCalculated) : ''}
                     className="w-24 text-right px-1 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 font-bold"
                   />
                   {manualAttendanceRecord?.manualPersonalTax != null && (
