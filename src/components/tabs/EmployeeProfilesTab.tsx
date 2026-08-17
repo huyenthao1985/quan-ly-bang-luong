@@ -3,6 +3,7 @@ import { Database, Plus, Search, Edit, Trash2, X, Filter } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { Employee, Position } from '../../types/payroll';
 import { formatVND } from '../../utils/payrollCalculations';
+import { EmployeeCarousel3D } from './EmployeeCarousel3D';
 
 export const EmployeeProfilesTab: React.FC = () => {
   const {
@@ -347,6 +348,9 @@ export const EmployeeProfilesTab: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* 3D Employee Carousel — lấp khoảng trống dưới bảng danh sách */}
+      <EmployeeCarousel3D employees={filteredEmployees} />
 
       {/* Add / Edit Modal */}
       {isModalOpen && (

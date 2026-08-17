@@ -244,3 +244,35 @@
 .app-layout.sidebar-collapsed .app-content {
   margin-left: 68px;
 }
+
+/* ================================================================
+   AURORA TEXT EFFECT — tiêu đề header "QUẢN LÝ BẢNG LƯƠNG"
+   EPCC (aurora-title) — gradient nhiều màu chạy, theo mẫu tham chiếu
+   người dùng cung cấp, dùng cho Header.tsx (class .aurora-text).
+   ================================================================ */
+.aurora-text {
+  background: linear-gradient(
+    90deg,
+    #6ee7f9 0%,
+    #a78bfa 20%,
+    #f472b6 40%,
+    #fbbf24 60%,
+    #34d399 80%,
+    #6ee7f9 100%
+  );
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: aurora-move 6s linear infinite;
+}
+
+@keyframes aurora-move {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-text { animation: none; }
+}

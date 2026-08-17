@@ -22,13 +22,26 @@ export const PayrollTab: React.FC = () => {
     ...(isSuperAdmin ? [{ id: 'accounts' as PayrollSubTab, label: 'Quản lý tài khoản', icon: Users }] : []),
   ];
 
+  const payrollContainerStyle: React.CSSProperties = {
+    backgroundImage: `linear-gradient(rgba(11, 18, 32, 0.35), rgba(11, 18, 32, 0.45)), url('/payroll-bg.png')`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center center',
+    backgroundRepeat: 'no-repeat',
+    backgroundAttachment: 'fixed',
+    borderRadius: '16px',
+    padding: '16px',
+    minHeight: '85vh',
+    imageRendering: '-webkit-optimize-contrast',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+  };
+
   // Với Admin (S. Manager), có toàn quyền quản trị ngay lập tức
   if (isSuperAdmin) {
     return (
-      <div className="space-y-[2mm]">
+      <div style={payrollContainerStyle} className="space-y-[3mm]">
         {/* ── Sheet toggle cho Admin ── */}
-        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-          <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+        <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex items-center gap-3">
+          <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80">
             {subTabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -36,7 +49,7 @@ export const PayrollTab: React.FC = () => {
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[0.9rem] font-semibold transition-all cursor-pointer ${
                   subTab === id
                     ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    : 'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -64,21 +77,23 @@ export const PayrollTab: React.FC = () => {
 
   if (!activeEmpId) {
     return (
-      <PayrollAuthGate
-        onSuccess={(empId) => {
-          setUnlockedEmpId(empId);
-          setSelectedEmployeeId(empId);
-        }}
-      />
+      <div style={payrollContainerStyle}>
+        <PayrollAuthGate
+          onSuccess={(empId) => {
+            setUnlockedEmpId(empId);
+            setSelectedEmployeeId(empId);
+          }}
+        />
+      </div>
     );
   }
 
   const currentEmp = employees.find((e) => e.id.toLowerCase() === activeEmpId.toLowerCase());
 
   return (
-    <div className="space-y-[2mm]">
+    <div style={payrollContainerStyle} className="space-y-[3mm]">
       {/* ── Banner thông tin nhân viên đang xem bảng lương ── */}
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
             <ShieldCheck className="w-5 h-5" />
@@ -101,7 +116,7 @@ export const PayrollTab: React.FC = () => {
           onClick={() => {
             setUnlockedEmpId(null);
           }}
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100/90 dark:bg-slate-700/90 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-300 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" />
           <span>Đổi người xem / Đăng xuất</span>
@@ -109,8 +124,8 @@ export const PayrollTab: React.FC = () => {
       </div>
 
       {/* ── Sheet toggle cho Cài đặt / Bảng lương ── */}
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-3">
-        <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex items-center gap-3">
+        <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80">
           {subTabs.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -118,7 +133,7 @@ export const PayrollTab: React.FC = () => {
               className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[0.9rem] font-semibold transition-all cursor-pointer ${
                 subTab === id
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  : 'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60'
               }`}
             >
               <Icon className="w-4 h-4" />

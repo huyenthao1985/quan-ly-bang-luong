@@ -1,0 +1,124 @@
+/* EmployeeCarousel3D.css
+   Kỹ thuật gốc: mỗi thẻ xoay quanh 1 trục Y chung, dùng biến CSS --i (thứ tự thẻ)
+   và --n (tổng số thẻ) để chia đều 360deg, giữ nguyên tinh thần carousel 3D
+   trong ảnh mẫu (grid-area chồng thẻ + rotateY + translateZ), nhưng thay ảnh
+   sứa bằng "thẻ ID nhân viên" theo đúng bộ nhận diện Navy (#122842) + Vàng
+   của IM-VINA Dashboards. */
+
+.ec3d-scene {
+  --radius: 220px;
+  --card-w: 148px;
+  --card-h: 200px;
+  perspective: 1400px;
+  perspective-origin: 50% 40%;
+}
+
+.ec3d-track {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  animation: ec3d-spin 28s linear infinite;
+}
+
+.ec3d-scene:hover .ec3d-track,
+.ec3d-track:focus-within {
+  animation-play-state: paused;
+}
+
+@keyframes ec3d-spin {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(360deg); }
+}
+
+.ec3d-card {
+  position: absolute;
+  inset: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 14px;
+  overflow: hidden;
+  transform: rotateY(calc(var(--i) * (360deg / var(--n)))) translateZ(var(--radius));
+  box-shadow: 0 10px 24px -8px rgba(2, 8, 23, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  background: linear-gradient(165deg, #16324f 0%, #0c1f33 70%, #0a1929 100%);
+}
+
+.ec3d-card__stripe {
+  height: 6px;
+  width: 100%;
+}
+
+.ec3d-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.ec3d-card__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #0c1f33;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+}
+
+.ec3d-card__name {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.ec3d-card__role {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ec3d-card__dept {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ec3d-card__id {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec3d-track {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .ec3d-scene {
+    --radius: 150px;
+    --card-w: 118px;
+    --card-h: 160px;
+  }
+}

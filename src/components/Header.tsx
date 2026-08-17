@@ -24,10 +24,14 @@ export const Header: React.FC = () => {
       style={{ height: '60px', boxSizing: 'border-box' }}
     >
       <div className="max-w-7xl mx-auto w-full flex items-center justify-center gap-3">
-        <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center font-black text-lg tracking-wider text-white shadow-inner">
-          P
-        </div>
-        <h1 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-slate-100 font-sans">
+        {/* EPCC (remove-p-badge) — theo yêu cầu người dùng: bỏ khối logo chữ
+            "P" phía trước tiêu đề, header giờ chỉ còn lại tên app. */}
+        {/* EPCC (aurora-title) — đổi màu tiêu đề từ solid text-slate-100 sang
+            hiệu ứng gradient nhiều màu chạy (aurora), theo mẫu tham chiếu
+            người dùng cung cấp. CSS class .aurora-text định nghĩa trong
+            App.css (hoặc index.css). Cỡ chữ tăng thêm 30% so với bản gốc
+            (text-xl/md:text-2xl → 1.625rem/1.95rem, tương đương +30%). */}
+        <h1 className="aurora-text text-[1.625rem] md:text-[1.95rem] font-bold tracking-tight uppercase font-sans">
           QUẢN LÝ BẢNG LƯƠNG
         </h1>
       </div>

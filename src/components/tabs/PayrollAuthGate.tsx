@@ -3,6 +3,7 @@ import { Lock, KeyRound, User, Eye, EyeOff, ShieldCheck, LogOut, CheckCircle2, A
 import { supabase } from '../../lib/supabase';
 import { EmployeeDirectoryEntry, fetchEmployeeDirectory, signUpEmployee, buildEmployeeEmail } from '../../lib/auth';
 import { usePayroll } from '../../context/PayrollContext';
+import { FlowerAnimation } from './FlowerAnimation';
 
 interface PayrollAuthGateProps {
   onSuccess?: (employeeId: string) => void;
@@ -132,20 +133,13 @@ export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = ({ onSuccess }) =
   };
 
   return (
-    <div className="max-w-md mx-auto my-8 p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700">
+    <>
+    <div className="max-w-md mx-auto my-6 p-6 bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 dark:border-slate-700/60 transition-all">
       {/* Header */}
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 mb-3 shadow-inner">
-          <Lock className="w-6 h-6" />
-        </div>
+      <div className="text-center mb-5">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
           {mode === 'login' ? 'Đăng Nhập Xem Bảng Lương' : 'Đăng Ký Tài Khoản Xem Lương'}
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {mode === 'login'
-            ? 'Chọn tên và nhập mật khẩu để xem phiếu lương cá nhân của bạn'
-            : 'Đăng ký tài khoản mới theo tên nhân viên để chờ Admin phân quyền'}
-        </p>
       </div>
 
       {/* Thông báo lỗi / thành công */}
@@ -228,11 +222,44 @@ export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = ({ onSuccess }) =
           </div>
         )}
 
-        {/* Nút Submit */}
+        {/* Nút Submit — 3D */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+          style={{
+            width: '100%',
+            padding: '11px 16px',
+            background: 'linear-gradient(180deg, #5b8dee 0%, #3b5fc0 100%)',
+            color: '#fff',
+            fontSize: '13px',
+            fontWeight: 700,
+            borderRadius: '10px',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 6px 0 #2240a0, 0 8px 16px rgba(59,95,192,0.45)',
+            transform: 'translateY(0)',
+            transition: 'transform 0.08s ease, box-shadow 0.08s ease',
+            opacity: loading ? 0.65 : 1,
+            letterSpacing: '0.02em',
+          }}
+          onMouseDown={(e) => {
+            if (!loading) {
+              (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(4px)';
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 0 #2240a0, 0 4px 8px rgba(59,95,192,0.35)';
+            }
+          }}
+          onMouseUp={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 0 #2240a0, 0 8px 16px rgba(59,95,192,0.45)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)';
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 0 #2240a0, 0 8px 16px rgba(59,95,192,0.45)';
+          }}
         >
           {mode === 'login' ? (
             <>
@@ -275,5 +302,11 @@ export const PayrollAuthGate: React.FC<PayrollAuthGateProps> = ({ onSuccess }) =
         )}
       </div>
     </div>
+
+    {/* Hiệu ứng hoa xoay neon tím — lấp khoảng trống nền tối bên dưới thẻ đăng nhập */}
+    <div className="max-w-md mx-auto">
+      <FlowerAnimation />
+    </div>
+    </>
   );
 };
