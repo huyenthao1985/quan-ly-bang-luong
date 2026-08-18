@@ -103,7 +103,19 @@ export function calculatePayslip(
     let sumDailyFemale = 0;
     Object.values(attendanceRecord.dailyRecords).forEach((day) => {
       hcTotalHours += day.hcHours || 0;
-      ot150Hours += day.otHours || 0;
+      let dayOt = day.otHours || 0;
+      if ((day.nightHours || 0) > 0 && day.checkIn && day.checkOut) {
+        const [hhIn, mmIn] = day.checkIn.split(':').map(Number);
+        const [hhOut, mmOut] = day.checkOut.split(':').map(Number);
+        const sDec = (hhIn || 0) + (mmIn || 0) / 60;
+        const eDec = (hhOut || 0) + (mmOut || 0) / 60;
+        const eAdjusted = eDec <= sDec ? eDec + 24 : eDec;
+        const pc50 = Math.round(Math.max(0, Math.min(eAdjusted, 30) - Math.max(sDec, 29)) * 2) / 2;
+        if (dayOt === pc50 && eDec > 5.0 && eDec <= sDec) {
+          dayOt = Math.round((eDec - 5.0) * 2) / 2;
+        }
+      }
+      ot150Hours += dayOt;
       nightShiftHours += day.nightHours || 0;
       sunday200Hours += day.sundayHours || 0;
       holiday300Hours += day.holidayHours || 0;

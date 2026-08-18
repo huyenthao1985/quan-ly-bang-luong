@@ -377,6 +377,7 @@ export const AttendanceTab: React.FC = () => {
   }, [editSH, editSMin, editSAP, editEH, editEMin, editEAP]);
 
   // ── Click-to-edit: sửa từng ô riêng lẻ (không cần bấm nút Edit) ──────────
+  // ── Click-to-edit: sửa từng ô riêng lẻ (không cần bấm nút Edit) ──────────
   // cellEdit = { date, field } xác định ô đang được sửa trực tiếp
   type CellField = 'shift' | 'checkIn' | 'checkOut' | 'hcHours' | 'otHours';
   const [cellEdit, setCellEdit] = useState<{ date: string; field: CellField } | null>(null);
@@ -387,13 +388,22 @@ export const AttendanceTab: React.FC = () => {
   const openCellEdit = (rec: DailyAttendance, field: CellField) => {
     if (!selEmpId) return;
     let initial = '';
-    if (field === 'shift')    initial = (rec.nightHours || 0) > 0 ? 'night' : 'day';
-    if (field === 'checkIn')  initial = rec.checkIn  || ((rec.nightHours || 0) > 0 ? '20:00' : '07:30');
-    if (field === 'checkOut') initial = rec.checkOut || ((rec.nightHours || 0) > 0 ? '05:00' : '17:00');
+    const isNight = (rec.nightHours || 0) > 0;
+    if (field === 'shift')    initial = isNight ? 'night' : 'day';
+    if (field === 'checkIn')  initial = rec.checkIn  || (isNight ? '20:00' : '07:30');
+    if (field === 'checkOut') initial = rec.checkOut || (isNight ? '05:00' : '17:00');
     if (field === 'hcHours')  initial = (rec.hcHours  || 0).toString();
     if (field === 'otHours') {
-      // Chỉ lấy otHours thuần (không gộp nightHours — đó là phụ cấp đêm riêng biệt)
-      initial = (rec.otHours || 0).toString();
+      let otVal = rec.otHours || 0;
+      if (isNight && rec.checkIn && rec.checkOut) {
+        const s = parseTime24(rec.checkIn);  const startD = toDecHours(s.h, s.m, s.ampm);
+        const e = parseTime24(rec.checkOut); const endD   = toDecHours(e.h, e.m, e.ampm);
+        const pc50 = calcNightAllowance50(startD, endD);
+        if (otVal === pc50) {
+          otVal = calcOtHours(startD, endD);
+        }
+      }
+      initial = otVal.toString();
     }
     setCellEdit({ date: rec.date, field });
     setCellVal(initial);
@@ -411,15 +421,14 @@ export const AttendanceTab: React.FC = () => {
       const s = parseTime24(inStr);  const startD = toDecHours(s.h, s.m, s.ampm);
       const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
-      // EPCC (night-allowance-30-50-clock-window) - PC ca đêm 30%/50% tính theo khung giờ
-      // cố định 22:00–05:00 / 05:00–06:00 (calcNightAllowance30/50), không còn dùng
-      // calcOtHours() chung nữa khi là ca đêm.
+      const ot = calcOtHours(startD, endD);
+      // EPCC (night-shift-ot-fix) - Ca đêm: nightHours là PC 30% (22:00-05:00), otHours là số giờ tăng ca thực tế (calcOtHours)
       updateAttendanceDay(selEmpId, rec.date, 'nightHours',  isNight ? calcNightAllowance30(startD, endD) : 0);
       updateAttendanceDay(selEmpId, rec.date, 'hcHours',     hc);
-      updateAttendanceDay(selEmpId, rec.date, 'otHours',     isNight ? calcNightAllowance50(startD, endD) : rec.otHours || 0);
+      updateAttendanceDay(selEmpId, rec.date, 'otHours',     ot);
       showToast(`Đổi ca ngày ${rec.date} → ${isNight ? 'Ca đêm' : 'Ca ngày'}`);
     } else if (field === 'checkIn' || field === 'checkOut') {
-      // Lưu giờ vào/ra mới và tính lại HC (+ PC đêm 30%/50% nếu là ca đêm)
+      // Lưu giờ vào/ra mới và tính lại HC (+ PC đêm 30% nếu là ca đêm)
       const isNight = (rec.nightHours || 0) > 0;
       const inStr  = field === 'checkIn'  ? cellVal : (rec.checkIn  || (isNight ? '20:00' : '07:30'));
       const outStr = field === 'checkOut' ? cellVal : (rec.checkOut || (isNight ? '05:00' : '17:00'));
@@ -427,19 +436,15 @@ export const AttendanceTab: React.FC = () => {
       const s = parseTime24(inStr);  const startD = toDecHours(s.h, s.m, s.ampm);
       const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
+      const ot = calcOtHours(startD, endD);
       updateAttendanceDay(selEmpId, rec.date, 'hcHours', hc);
+      updateAttendanceDay(selEmpId, rec.date, 'otHours', ot);
       if (isNight) {
-        // EPCC (night-allowance-30-50-clock-window) - Ca đêm: nightHours (PC 30%) và
-        // otHours (PC 50%) đều tính lại tự động theo khung giờ 22:00–05:00 / 05:00–06:00
-        // dựa trên giờ vào/ra mới, thay vì giữ nguyên otHours như trước.
         updateAttendanceDay(selEmpId, rec.date, 'nightHours', calcNightAllowance30(startD, endD));
-        updateAttendanceDay(selEmpId, rec.date, 'otHours',    calcNightAllowance50(startD, endD));
       } else {
-        // Ca ngày: tính lại OT từ giờ vào/ra
-        const ot = calcOtHours(startD, endD);
-        updateAttendanceDay(selEmpId, rec.date, 'otHours', ot);
+        updateAttendanceDay(selEmpId, rec.date, 'nightHours', 0);
       }
-      showToast(`Cập nhật giờ ngày ${rec.date}: vào ${inStr} → ra ${outStr}, HC=${hc.toFixed(1)}h`);
+      showToast(`Cập nhật giờ ngày ${rec.date}: vào ${inStr} → ra ${outStr}, HC=${hc.toFixed(1)}h | OT=${ot.toFixed(1)}h`);
     } else if (field === 'hcHours') {
       const val = parseFloat(cellVal);
       if (!isNaN(val) && val >= 0) {
@@ -489,15 +494,11 @@ export const AttendanceTab: React.FC = () => {
   const saveEditRow = (rec: DailyAttendance) => {
     if (!selEmpId) return;
     const hcH = editHcAuto;
-    let otH = 0, nightH = 0;
+    const otH = editOtAuto;
+    let nightH = 0;
     if (editIsNight) {
-      // EPCC (night-allowance-30-50-clock-window) - PC ca đêm 30%/50% tính theo khung giờ
-      // cố định 22:00–05:00 / 05:00–06:00 (editNight30Auto/editNight50Auto), không còn
-      // dùng editHcAuto/editOtAuto (tổng HC/OT chung) cho 2 khoản này nữa.
+      // EPCC (night-shift-ot-fix) - Ca đêm: nightHours là PC 30% (22:00-05:00), otHours là số giờ tăng ca (editOtAuto)
       nightH = editNight30Auto;
-      otH = editNight50Auto;
-    } else {
-      otH = editOtAuto;
     }
 
     const applyTo = (dateKey: string) => {
@@ -525,7 +526,7 @@ export const AttendanceTab: React.FC = () => {
     }
 
     setEditingDate(null);
-    showToast(`Đã sửa điểm danh ngày ${editDate}: HC=${hcH.toFixed(1)}h | OT=${(otH + nightH).toFixed(1)}h`);
+    showToast(`Đã sửa điểm danh ngày ${editDate}: HC=${hcH.toFixed(1)}h | OT=${otH.toFixed(1)}h`);
   };
 
   const recentRecs = useMemo(() => {
@@ -545,7 +546,18 @@ export const AttendanceTab: React.FC = () => {
     let hc = 0, ot = 0;
     (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
       hc += d.hcHours || 0;
-      ot += (d.otHours || 0) + (d.sundayHours || 0) + (d.holidayHours || 0);
+      let dayOt = d.otHours || 0;
+      if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
+        const dIn = parseTime24(d.checkIn);
+        const dOut = parseTime24(d.checkOut);
+        const sDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
+        const eDec = toDecHours(dOut.h, dOut.m, dOut.ampm);
+        const legacyPc50 = calcNightAllowance50(sDec, eDec);
+        if (dayOt === legacyPc50) {
+          dayOt = calcOtHours(sDec, eDec);
+        }
+      }
+      ot += dayOt + (d.sundayHours || 0) + (d.holidayHours || 0);
     });
     return { hc, ot };
   }, [selEmpId, selectedYear, selectedMonth, attendanceRecords]);
@@ -560,13 +572,18 @@ export const AttendanceTab: React.FC = () => {
     }
 
     if (shift === 'night') {
-      // EPCC (night-allowance-30-50-clock-window) - FIX theo yêu cầu người dùng: PC ca đêm
-      // 30% = khung 22:00–05:00 (tối đa 6h sau khi trừ ăn ca), PC ca đêm 50% = khung
-      // 05:00–06:00 (tối đa 1h) — xem calcNightAllowance30/50 để biết chi tiết công thức.
+      // EPCC (night-shift-ot-fix) - PC ca đêm 30% = khung 22:00–05:00 (tối đa 6h),
+      // OT (otHours) = số giờ làm thêm thực tế (05:00–08:00 = 3h) từ otAuto.
       const sDec = toDecHours(sH, sMin, sAP);
       const eDec = toDecHours(eH, eMin, eAP);
       nightH = calcNightAllowance30(sDec, eDec);
-      otH = calcNightAllowance50(sDec, eDec);
+      if (otType === 'sunday200') {
+        sunH = otAuto;
+      } else if (otType === 'holiday300') {
+        holH = otAuto;
+      } else {
+        otH = otAuto;
+      }
     } else if (otType === 'sunday200') {
       sunH = otAuto;
     } else if (otType === 'holiday300') {
@@ -589,8 +606,7 @@ export const AttendanceTab: React.FC = () => {
     updateAttendanceDay(selEmpId, ds, 'leaveUnpaidDays', luD);
     updateAttendanceDay(selEmpId, ds, 'isManual',       true);
     // EPCC (checkin-checkout-not-persisted) - FIX ROOT CAUSE "Giờ vào/ra trong bảng không khớp lúc nhập Manual":
-    // Trước đây hệ thống chỉ lưu số giờ HC/OT đã tính, không lưu giờ vào/ra thực tế đã chọn,
-    // nên bảng "Điểm danh gần đây" phải tự suy ra giờ chuẩn (07:30/17:00...) thay vì hiện đúng giờ đã nhập.
+    // Lưu giờ vào/ra thực tế đã chọn để bảng "Điểm danh gần đây" hiển thị đúng giờ đã nhập.
     updateAttendanceDay(selEmpId, ds, 'checkIn',  fmtTime24(sH, sMin, sAP));
     updateAttendanceDay(selEmpId, ds, 'checkOut', fmtTime24(eH, eMin, eAP));
 
@@ -599,9 +615,7 @@ export const AttendanceTab: React.FC = () => {
     setSaveAttempted(false);
 
     // EPCC (checkin-sets-viewer-identity) — sau khi điểm danh xong, nhớ nhân viên này là
-    // người đang dùng thiết bị/trình duyệt này (localStorage, chỉ áp dụng cho máy này),
-    // để PayslipTab tự áp đúng quyền xem Bảng lương theo vị trí thật của họ mà không cần
-    // Admin phải cấu hình employeeId thủ công trong SAMPLE_USERS.
+    // người đang dùng thiết bị/trình duyệt này
     setLastCheckedInEmployeeId(selEmpId);
   };
 
@@ -656,7 +670,18 @@ export const AttendanceTab: React.FC = () => {
     const d = rec?.dailyRecords?.[dateStr] as DailyAttendance | undefined;
     if (!d) return 0;
     if (type === 'hc') return d.hcHours || 0;
-    return (d.otHours || 0) + (d.sundayHours || 0) + (d.holidayHours || 0);
+    let otVal = d.otHours || 0;
+    if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
+      const dIn = parseTime24(d.checkIn);
+      const dOut = parseTime24(d.checkOut);
+      const sDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
+      const eDec = toDecHours(dOut.h, dOut.m, dOut.ampm);
+      const legacyPc50 = calcNightAllowance50(sDec, eDec);
+      if (otVal === legacyPc50) {
+        otVal = calcOtHours(sDec, eDec);
+      }
+    }
+    return otVal + (d.sundayHours || 0) + (d.holidayHours || 0);
   };
 
   // Về đầu bảng mỗi khi đổi tháng, để luôn thấy ngày 01 trước tiên
@@ -876,17 +901,6 @@ export const AttendanceTab: React.FC = () => {
                     </tr>
                   ) : recentRecs.map((rec) => {
                     const emp = employees.find(e => e.id === selEmpId);
-                    // OT hiển thị = otHours tăng ca thuần. nightHours là phụ cấp ca đêm riêng (không phải OT thêm giờ).
-                    // sundayHours/holidayHours cũng hiển thị riêng nếu cần, nhưng tạm gộp vào đây để giữ 1 cột.
-                    const ot = (rec.otHours || 0) + (rec.sundayHours || 0) + (rec.holidayHours || 0);
-                    // EPCC (night-allowance-live-recompute-old-records) - FIX theo yêu cầu
-                    // người dùng: các bản ghi CŨ (lưu trước khi đổi công thức) vẫn còn giữ
-                    // nightHours/otHours tính theo công thức cũ (toàn bộ 8h HC / OT thô) nên
-                    // hiển thị sai (vd 8.0/3.0 thay vì 6.0/1.0). FIX ROOT CAUSE: tính LẠI PC
-                    // Đêm 30%/50% NGAY TẠI ĐÂY từ checkIn/checkOut thực tế bằng
-                    // calcNightAllowance30/50 (khung 22:00–05:00 / 05:00–06:00), không đọc
-                    // trực tiếp rec.nightHours/rec.otHours nữa — đảm bảo luôn đúng công thức
-                    // mới nhất kể cả với dữ liệu đã lưu từ trước.
                     const isNightRow = (rec.nightHours || 0) > 0;
                     const pcIn  = parseTime24(rec.checkIn  || (isNightRow ? '20:00' : '07:30'));
                     const pcOut = parseTime24(rec.checkOut || (isNightRow ? '05:00' : '17:00'));
@@ -894,6 +908,11 @@ export const AttendanceTab: React.FC = () => {
                     const pcEndDec   = toDecHours(pcOut.h, pcOut.m, pcOut.ampm);
                     const pc30 = isNightRow ? calcNightAllowance30(pcStartDec, pcEndDec) : 0;
                     const pc50 = isNightRow ? calcNightAllowance50(pcStartDec, pcEndDec) : 0;
+                    let displayOt = rec.otHours || 0;
+                    if (isNightRow && (displayOt === pc50 || (rec.checkIn && rec.checkOut))) {
+                      displayOt = calcOtHours(pcStartDec, pcEndDec);
+                    }
+                    const ot = displayOt + (rec.sundayHours || 0) + (rec.holidayHours || 0);
                     const badge = (text: string, cls: string) =>
                       <span className={`inline-flex px-2 py-0.5 rounded-full font-semibold text-[10px] ${cls}`}>{text}</span>;
                     // EPCC (date-first-no-stt) - tính isEditing sớm hơn (trước đây khai
@@ -1170,26 +1189,20 @@ export const AttendanceTab: React.FC = () => {
                     // checkIn/checkOut thực tế bằng calcNightAllowance30/50 (khung 22:00–05:00
                     // / 05:00–06:00), giống hệt công thức dùng ở bảng "Danh sách điểm danh
                     // gần đây" — đảm bảo 2 bảng luôn khớp số nhau.
+                    let dayOt = d.otHours || 0;
                     if ((d.nightHours || 0) > 0) {
                       const dIn  = parseTime24(d.checkIn  || '20:00');
                       const dOut = parseTime24(d.checkOut || '05:00');
                       const dStartDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
                       const dEndDec   = toDecHours(dOut.h, dOut.m, dOut.ampm);
                       tN += calcNightAllowance30(dStartDec, dEndDec);
-                      tNightOt += calcNightAllowance50(dStartDec, dEndDec);
+                      const pc50 = calcNightAllowance50(dStartDec, dEndDec);
+                      tNightOt += pc50;
+                      if (dayOt === pc50 || (d.checkIn && d.checkOut)) {
+                        dayOt = calcOtHours(dStartDec, dEndDec);
+                      }
                     }
-                    // EPCC (ot-night-double-count-bug-fix) — FIX ROOT CAUSE "OT 150% không khớp
-                    // với Nhập điểm danh": trước đây nếu ngày đó là ca đêm (nightHours > 0),
-                    // otHours của ngày đó bị CHUYỂN HẲN sang tNightOt ("Đêm 50%") và KHÔNG cộng
-                    // vào tOt ("OT 150%") nữa — trong khi `getDayVal()` (ma trận ngày HC/OT phía
-                    // dưới) và "Danh sách điểm danh gần đây" (EditableCell) đều hiển thị NGUYÊN
-                    // otHours, không loại trừ gì. 2 công thức khác nhau trên cùng 1 nguồn dữ liệu
-                    // ⇒ số liệu lệch nhau (vd Lê Anh Tú: chi tiết có 18h OT nhưng "OT 150%" trống).
-                    // FIX: tOt LUÔN cộng nguyên otHours (không phân biệt ca ngày/ca đêm) để khớp
-                    // với 2 nơi kia. tNightOt ("Đêm 50%") giờ tính live ở trên (không còn dùng
-                    // otHours đã lưu) — vẫn giữ ý nghĩa "khoản PHỤ CẤP CỘNG THÊM cho phần OT rơi
-                    // vào ca đêm", ngoài phần OT 150% (tOt) đã tính.
-                    tOt += d.otHours || 0;
+                    tOt += dayOt;
                     tSun += d.sundayHours || 0; tHol += d.holidayHours || 0;
                     tLp += d.leavePaidDays || 0; tLa += d.leaveAnnualDays || 0;
                     // Nghỉ không lương: dùng để Bảng lương xét điều kiện phụ cấp chuyên cần
