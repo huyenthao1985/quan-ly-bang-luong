@@ -7,10 +7,15 @@
 
 .ec3d-scene {
   --radius: 220px;
-  --card-w: 148px;
-  --card-h: 200px;
+  --card-w: 160px;
+  --card-h: 220px;
   perspective: 1400px;
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% 50%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
 }
 
 .ec3d-track {

@@ -35,9 +35,9 @@ export const EmployeeCarousel3D: React.FC<EmployeeCarousel3DProps> = ({
   const n = cards.length;
 
   // Bán kính hình học: card_width / (2 * tan(PI / n)) — giữ các thẻ không đè lên nhau
-  // khi xoay quanh trục Y, cùng công thức tan() thấy trong ảnh mẫu gốc (transform: ... tan(...)).
+  // khi xoay quanh trục Y
   const radius = useMemo(() => {
-    const cardWidth = 148;
+    const cardWidth = 160;
     if (n < 2) return 0;
     return Math.round(cardWidth / 2 / Math.tan(Math.PI / n));
   }, [n]);
@@ -47,12 +47,14 @@ export const EmployeeCarousel3D: React.FC<EmployeeCarousel3DProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 py-10 px-4">
-      <div className="text-center mb-8">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 tracking-wide">
+    <div className="relative bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 py-6 px-4 overflow-hidden min-h-[300px] flex items-center justify-center">
+      {/* Tiêu đề chuyển sang góc trái màn hình để vòng xoay full to lên top & bottom */}
+      <div className="absolute top-3.5 left-4 z-10 text-left pointer-events-none">
+        <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 tracking-wide flex items-center gap-1.5">
+          <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
           ĐỘI NGŨ PPC TEAM
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
           {n} nhân viên tiêu biểu · di chuột vào để dừng vòng xoay
         </p>
       </div>
