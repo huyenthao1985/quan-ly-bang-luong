@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
 import { DailyAttendance } from '../../types/payroll';
+import { sortEmployeesByCode } from '../../utils/employeeUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 type ViewMode = 'manual' | 'table';
@@ -643,8 +644,10 @@ export const AttendanceTab: React.FC = () => {
     setSaveAttempted(false);
   };
 
-  const filteredEmps = employees.filter(e =>
-    e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.includes(searchTerm)
+  const filteredEmps = sortEmployeesByCode(
+    employees.filter(e =>
+      e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.includes(searchTerm)
+    )
   );
   const mp = pad2(selectedMonth);
   const statusColor = STATUS_OPTIONS.find(s => s.value === status)?.color || 'inherit';

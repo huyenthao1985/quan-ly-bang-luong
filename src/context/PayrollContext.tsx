@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { INITIAL_EMPLOYEES, INITIAL_SALARY_CONFIG, SAMPLE_USERS } from '../data/initialData';
+import { sortEmployeesByCode } from '../utils/employeeUtils';
 import {
   Employee,
   EmployeeAttendanceRecord,
@@ -125,10 +126,12 @@ interface PayrollProviderProps {
 
 export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, authProfile, onSignOut }) => {
   // ─── Local state (khởi tạo từ localStorage trước, sau đó đồng bộ với Supabase) ───
+  // EPCC (sort-employees-by-code) — luôn sắp xếp theo chuẩn mã nhân viên: Type (1/2) -> Năm -> Tháng -> STT
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('payroll_employees');
     const raw: Employee[] = saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
-    return raw.filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531');
+    const filtered = raw.filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531');
+    return sortEmployeesByCode(filtered);
   });
 
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(() => {
@@ -227,9 +230,9 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
             await upsertEmployees(localData);
             console.info('[Supabase] Đã migrate employees từ localStorage lên cloud.');
           } else {
-            setEmployees(remoteEmployees.filter(e =>
+            setEmployees(sortEmployeesByCode(remoteEmployees.filter(e =>
               e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531'
-            ));
+            )));
           }
         }
 
@@ -350,31 +353,31 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
   const addEmployee = (newEmp: Omit<Employee, 'id'> & { id?: string }) => {
     const id = newEmp.id || Math.floor(10000000 + Math.random() * 90000000).toString();
     const fullEmp: Employee = { ...newEmp, id };
-    setEmployees((prev) => [fullEmp, ...prev]);
+    setEmployees((prev) => sortEmployeesByCode([fullEmp, ...prev]));
     if (isDbLoaded) upsertEmployee(fullEmp);
     showToast(`Đã thêm nhân viên ${fullEmp.fullName} (${fullEmp.id}) thành công!`);
   };
 
   const updateEmployee = (updated: Employee) => {
-    setEmployees((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    setEmployees((prev) => sortEmployeesByCode(prev.map((e) => (e.id === updated.id ? updated : e))));
     if (isDbLoaded) upsertEmployee(updated);
     showToast(`Đã cập nhật thông tin nhân viên ${updated.fullName}`);
   };
 
   const deleteEmployee = (id: string) => {
     const target = employees.find((e) => e.id === id);
-    setEmployees((prev) => prev.filter((e) => e.id !== id));
+    setEmployees((prev) => sortEmployeesByCode(prev.filter((e) => e.id !== id)));
     if (isDbLoaded) deleteEmployeeFromDb(id);
     showToast(`Đã xóa nhân viên ${target?.fullName || id}`, 'info');
   };
 
   const seedSampleData = () => {
-    setEmployees(INITIAL_EMPLOYEES);
+    setEmployees(sortEmployeesByCode(INITIAL_EMPLOYEES));
     setSalaryConfig(INITIAL_SALARY_CONFIG);
     localStorage.removeItem('payroll_attendance');
     setAttendanceRecords({});
     if (isDbLoaded && isSupabaseEnabled) {
-      upsertEmployees(INITIAL_EMPLOYEES);
+      upsertEmployees(sortEmployeesByCode(INITIAL_EMPLOYEES));
       upsertSalaryConfig(INITIAL_SALARY_CONFIG);
     }
     showToast('Đã nạp dữ liệu mẫu ban đầu thành công!', 'success');
