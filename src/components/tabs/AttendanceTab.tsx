@@ -304,7 +304,8 @@ export const AttendanceTab: React.FC = () => {
     setLastCheckedInEmployeeId,
   } = usePayroll();
 
-  const [viewMode, setViewMode] = useState<ViewMode>('manual');
+  // EPCC (default-viewmode-table) — luôn hiển thị sheet Bảng tổng hợp trước khi mở mục Nhập điểm danh
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [searchTerm, setSearchTerm] = useState('');
   const [selEmpId, setSelEmpId] = useState('');
   const [status, setStatus] = useState<AttendanceStatus>('present');
