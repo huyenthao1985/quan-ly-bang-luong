@@ -6,16 +6,16 @@
    của IM-VINA Dashboards. */
 
 .ec3d-scene {
-  --radius: 220px;
-  --card-w: 160px;
-  --card-h: 220px;
+  --radius: 230px;
+  --card-w: 168px;
+  --card-h: 236px;
   perspective: 1400px;
   perspective-origin: 50% 50%;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 8px 0;
+  padding: 12px 0;
 }
 
 .ec3d-track {

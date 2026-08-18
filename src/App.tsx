@@ -21,8 +21,8 @@ const MainContent: React.FC = () => {
 
   return (
     <main
-      className="max-w-7xl mx-auto px-4 pb-5 space-y-6"
-      style={{ flex: 1, width: '100%', paddingTop: '0.5mm' }}
+      className="max-w-7xl mx-auto px-4 space-y-6 flex flex-col flex-1"
+      style={{ flex: 1, width: '100%', paddingTop: '0.5mm', paddingBottom: '0.5mm' }}
     >
       {activeTab === 'dashboard' && <DashboardTab />}
       {activeTab === 'employees' && <EmployeeProfilesTab />}
@@ -62,7 +62,7 @@ const AppShell: React.FC = () => {
 
         <footer
           className="border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400"
-          style={{ marginTop: 'auto', paddingTop: '24px', paddingBottom: 'calc(1mm + 12px)' }}
+          style={{ marginTop: 'auto', paddingTop: '0.5mm', paddingBottom: 'calc(0.5mm + 6px)' }}
         >
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>QUẢN LÝ BẢNG LƯƠNG & CHẤM CÔNG IM © 2026</p>

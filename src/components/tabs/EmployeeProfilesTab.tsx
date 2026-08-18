@@ -150,7 +150,7 @@ export const EmployeeProfilesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-[0.5mm]">
+    <div className="space-y-[0.5mm] flex flex-col flex-1 pb-[0.5mm]">
       {/* Card duy nhất chứa Toolbar điều khiển phía trên và Bảng nhân viên */}
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
         {/* Toolbar gộp toàn bộ: Ô tìm kiếm + Lọc phòng ban + Nạp dữ liệu mẫu + Thêm NV */}
