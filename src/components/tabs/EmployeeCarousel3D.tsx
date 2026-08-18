@@ -37,7 +37,7 @@ export const EmployeeCarousel3D: React.FC<EmployeeCarousel3DProps> = ({
   // Bán kính hình học: card_width / (2 * tan(PI / n)) — giữ các thẻ không đè lên nhau
   // khi xoay quanh trục Y
   const radius = useMemo(() => {
-    const cardWidth = 168;
+    const cardWidth = 230;
     if (n < 2) return 0;
     return Math.round(cardWidth / 2 / Math.tan(Math.PI / n));
   }, [n]);
@@ -47,9 +47,9 @@ export const EmployeeCarousel3D: React.FC<EmployeeCarousel3DProps> = ({
   }
 
   return (
-    <div className="relative bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 py-8 px-4 overflow-hidden flex-1 min-h-[350px] flex items-center justify-center mb-[0.5mm]">
-      {/* Tiêu đề chuyển sang góc trái màn hình để vòng xoay full to lên top & bottom */}
-      <div className="absolute top-3.5 left-4 z-10 text-left pointer-events-none">
+    <div className="relative bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 py-[0.5mm] px-2 overflow-hidden flex-1 min-h-[360px] flex items-center justify-center mb-[0.5mm]">
+      {/* Tiêu đề góc trái màn hình */}
+      <div className="absolute top-2 left-3.5 z-10 text-left pointer-events-none">
         <h3 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 tracking-wide flex items-center gap-1.5">
           <span className="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
           ĐỘI NGŨ PPC TEAM
