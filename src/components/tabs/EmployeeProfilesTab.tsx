@@ -150,68 +150,65 @@ export const EmployeeProfilesTab: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Sub-header & Action Buttons matching screenshot layout */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            Danh sách nhân viên công ty
-          </p>
-        </div>
+    <div className="space-y-[0.5mm]">
+      {/* Card duy nhất chứa Toolbar điều khiển phía trên và Bảng nhân viên */}
+      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Toolbar gộp toàn bộ: Ô tìm kiếm + Lọc phòng ban + Nạp dữ liệu mẫu + Thêm NV */}
+        <div className="p-2 sm:p-2.5 bg-slate-50/70 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+          {/* Cụm trái: Ô tìm kiếm + Lọc phòng ban */}
+          <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo Mã NV, Họ tên, SĐT..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-2.5 py-1 text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={seedSampleData}
-            className="flex items-center gap-2 bg-[#d97706] hover:bg-[#b45309] text-white text-sm font-medium px-4 py-2 rounded shadow-sm transition-all cursor-pointer"
-          >
-            <Database className="w-4 h-4" />
-            <span>Nạp dữ liệu mẫu</span>
-          </button>
+            <div className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Phòng ban:</span>
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="text-[11px] bg-transparent border-none text-slate-800 dark:text-slate-200 font-semibold cursor-pointer outline-none"
+              >
+                {departments.map((d) => (
+                  <option key={d} value={d}>
+                    {d === 'ALL' ? 'Tất cả' : d}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-          {activeRole !== 'User' && (
+          {/* Cụm phải: Nút Nạp dữ liệu mẫu + Nút Thêm NV */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={handleOpenAddModal}
-              className="flex items-center gap-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium px-4 py-2 rounded shadow-sm transition-all cursor-pointer"
+              onClick={seedSampleData}
+              className="flex items-center gap-1 bg-[#d97706] hover:bg-[#b45309] text-white text-xs font-semibold px-2.5 py-1 rounded-md shadow-xs transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              <span>+ Thêm NV</span>
+              <Database className="w-3.5 h-3.5" />
+              <span>Nạp dữ liệu mẫu</span>
             </button>
-          )}
-        </div>
-      </div>
 
-      {/* Filter and Search controls */}
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-xs border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Tìm kiếm theo Mã NV, Họ tên, SĐT..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+            {activeRole !== 'User' && (
+              <button
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-1 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-semibold px-2.5 py-1 rounded-md shadow-xs transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Thêm NV</span>
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Filter className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-xs text-slate-600 dark:text-slate-400">Phòng ban:</span>
-          <select
-            value={selectedDept}
-            onChange={(e) => setSelectedDept(e.target.value)}
-            className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 text-slate-800 dark:text-slate-200 cursor-pointer"
-          >
-            {departments.map((d) => (
-              <option key={d} value={d}>
-                {d === 'ALL' ? 'Tất cả phòng ban' : d}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Employee List Table matching Screenshot 1 & 2 */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-x-auto">
+        {/* Employee List Table */}
+        <div className="overflow-x-auto">
         <table className="w-full text-xs text-left border-collapse">
           {/* Exact dark navy header matching screenshot */}
           <thead className="bg-[#122842] text-white uppercase text-[11px] font-bold tracking-wider">
@@ -339,9 +336,10 @@ export const EmployeeProfilesTab: React.FC = () => {
           </tbody>
         </table>
       </div>
+    </div>
 
-      {/* 3D Employee Carousel — lấp khoảng trống dưới bảng danh sách */}
-      <EmployeeCarousel3D employees={filteredEmployees} />
+    {/* 3D Employee Carousel — lấp khoảng trống dưới bảng danh sách */}
+    <EmployeeCarousel3D employees={filteredEmployees} />
 
       {/* Add / Edit Modal */}
       {isModalOpen && (

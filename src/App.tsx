@@ -22,7 +22,7 @@ const MainContent: React.FC = () => {
   return (
     <main
       className="max-w-7xl mx-auto px-4 pb-5 space-y-6"
-      style={{ flex: 1, width: '100%', paddingTop: '2mm' }}
+      style={{ flex: 1, width: '100%', paddingTop: '0.5mm' }}
     >
       {activeTab === 'dashboard' && <DashboardTab />}
       {activeTab === 'employees' && <EmployeeProfilesTab />}
