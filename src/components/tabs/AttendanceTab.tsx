@@ -760,7 +760,23 @@ export const AttendanceTab: React.FC = () => {
               (không còn header bar trên cùng của card nữa). */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="p-2.5 space-y-2">
-              {/* Dòng 1: Nhân viên + Trạng thái + Ngày + Ngày đặc biệt */}
+              {/* Dòng 1: Giờ bắt đầu + Giờ kết thúc + Nút Lưu (cùng dòng) */}
+              <div className="grid grid-cols-5 gap-2 items-end">
+                <div className="col-span-2">
+                  <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
+                </div>
+                <div className="col-span-2">
+                  <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
+                </div>
+                <div className="col-span-1">
+                  <button onClick={doSave}
+                    className="w-full h-[32px] flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-xs rounded-md shadow transition-all cursor-pointer">
+                    <Save className="w-3.5 h-3.5" />💾 Lưu
+                  </button>
+                </div>
+              </div>
+
+              {/* Dòng 2: Nhân viên + Trạng thái + Ngày + Ngày đặc biệt */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
                   <label className="block text-[10px] font-bold text-red-500 mb-0.5">● Nhân viên</label>
@@ -806,22 +822,6 @@ export const AttendanceTab: React.FC = () => {
                   options={SPECIAL_OPTIONS}
                   rowCls="bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-blue-500"
                 />
-              </div>
-
-              {/* Dòng 2: Giờ bắt đầu + Giờ kết thúc + Nút Lưu (cùng dòng) */}
-              <div className="grid grid-cols-5 gap-2 items-end">
-                <div className="col-span-2">
-                  <TimePick label="Giờ bắt đầu" h={sH} m={sMin} ampm={sAP} onH={setSH} onM={setSMin} onAP={setSAP} />
-                </div>
-                <div className="col-span-2">
-                  <TimePick label="Giờ kết thúc" h={eH} m={eMin} ampm={eAP} onH={setEH} onM={setEMin} onAP={setEAP} />
-                </div>
-                <div className="col-span-1">
-                  <button onClick={doSave}
-                    className="w-full h-[32px] flex items-center justify-center gap-1 bg-green-600 hover:bg-green-700 active:scale-95 text-white font-bold text-xs rounded-md shadow transition-all cursor-pointer">
-                    <Save className="w-3.5 h-3.5" />💾 Lưu
-                  </button>
-                </div>
               </div>
 
               {/* Dòng 3: Ca làm + HC / OT ngoài giờ / Loại OT-Phụ cấp */}
