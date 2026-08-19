@@ -148,10 +148,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
         }
         .app-content {
           margin-left: 0 !important;
-          transition: margin-left 0.25s ease;
+          transition: margin-left 0.25s ease, width 0.25s ease;
+          width: 100% !important;
+          min-width: 0 !important;
         }
-        .sidebar.open + .app-content {
-          margin-left: 210px !important;
+        @media (min-width: 769px) {
+          .sidebar.open + .app-content {
+            margin-left: 210px !important;
+            width: calc(100% - 210px) !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .sidebar.open {
+            box-shadow: 0 0 0 100vmax rgba(0,0,0,0.6) !important;
+          }
+          .sidebar.open + .app-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
         }
         .sidebar .sidebar-header {
           background: linear-gradient(90deg, #026466 0%, #026466 62%, #cfdc00 100%) !important;

@@ -45,7 +45,7 @@ export const EmployeeProfilesTab: React.FC = () => {
 
   // EPCC (employee-list-sort-by-code) — sắp xếp danh sách theo MÃ NHÂN VIÊN chuẩn công ty:
   // Số 1 (Nhân viên) trước, Số 2 (OP) sau -> Năm -> Tháng -> STT
-  const filteredEmployees = sortEmployeesByCode(
+  const filteredEmployees = sortEmployeesByCode<Employee>(
     employees.filter((emp) => {
       const matchesSearch =
         emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||

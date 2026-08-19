@@ -21,7 +21,7 @@ const MainContent: React.FC = () => {
 
   return (
     <main
-      className="max-w-7xl mx-auto px-4 space-y-6 flex flex-col flex-1"
+      className="w-full px-2 sm:px-4 md:px-5 space-y-4 flex flex-col flex-1 min-w-0"
       style={{ flex: 1, width: '100%', paddingTop: '0.5mm', paddingBottom: '0.5mm' }}
     >
       {activeTab === 'dashboard' && <DashboardTab />}
@@ -55,16 +55,16 @@ const AppShell: React.FC = () => {
         onOpen={() => setSidebarOpen(true)}
       />
 
-      <div className="app-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="app-content" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%', minWidth: 0 }}>
         <Header />
         <MainContent />
         <ToastContainer />
 
         <footer
-          className="border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400"
+          className="border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 w-full"
           style={{ marginTop: 'auto', paddingTop: '0.5mm', paddingBottom: 'calc(0.5mm + 6px)' }}
         >
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="w-full px-2 sm:px-4 md:px-5 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>QUẢN LÝ BẢNG LƯƠNG & CHẤM CÔNG IM © 2026</p>
             <p className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>

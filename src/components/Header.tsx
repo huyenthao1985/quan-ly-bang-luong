@@ -23,7 +23,7 @@ export const Header: React.FC = () => {
       className="bg-[#122842] dark:bg-[#0b1726] text-white shadow-md sticky top-0 z-40 px-4 border-b border-slate-700/50 transition-colors flex items-center relative"
       style={{ height: '60px', boxSizing: 'border-box' }}
     >
-      <div className="max-w-7xl mx-auto w-full flex items-center justify-center gap-3">
+      <div className="w-full px-2 sm:px-4 md:px-5 flex items-center justify-center gap-3">
         {/* EPCC (remove-p-badge) — theo yêu cầu người dùng: bỏ khối logo chữ
             "P" phía trước tiêu đề, header giờ chỉ còn lại tên app. */}
         {/* EPCC (aurora-title) — đổi màu tiêu đề từ solid text-slate-100 sang

@@ -4,7 +4,7 @@ import {
   ChevronDown, X, LayoutList, PencilLine, Edit3, Trash2,
 } from 'lucide-react';
 import { usePayroll } from '../../context/PayrollContext';
-import { DailyAttendance } from '../../types/payroll';
+import { Employee, DailyAttendance } from '../../types/payroll';
 import { sortEmployeesByCode } from '../../utils/employeeUtils';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -645,7 +645,7 @@ export const AttendanceTab: React.FC = () => {
     setSaveAttempted(false);
   };
 
-  const filteredEmps = sortEmployeesByCode(
+  const filteredEmps = sortEmployeesByCode<Employee>(
     employees.filter(e =>
       e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || e.id.includes(searchTerm)
     )
@@ -658,15 +658,22 @@ export const AttendanceTab: React.FC = () => {
   const matrixScrollRef = useRef<HTMLDivElement>(null);
 
   const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-  const dayColumns = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const dayColumns = useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
 
   const monthDays = useMemo(() => {
-    return dayColumns.map((d) => ({
-      day: d,
-      dateStr: `${selectedYear}-${pad2(selectedMonth)}-${pad2(d)}`,
-      isSunday: new Date(selectedYear, selectedMonth - 1, d).getDay() === 0,
-    }));
-  }, [selectedYear, selectedMonth]);
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return dayColumns.map((d) => {
+      const date = new Date(selectedYear, selectedMonth - 1, d);
+      const dayOfWeek = date.getDay();
+      return {
+        day: d,
+        dateStr: `${selectedYear}-${pad2(selectedMonth)}-${pad2(d)}`,
+        dayOfWeek,
+        dayName: DAY_NAMES[dayOfWeek],
+        isSunday: dayOfWeek === 0,
+      };
+    });
+  }, [selectedYear, selectedMonth, dayColumns]);
 
   /** Lấy giờ HC hoặc OT (gộp OT150/Đêm/CN/Lễ) của 1 nhân viên trong 1 ngày cụ thể của tháng đang chọn */
   const getDayVal = (empId: string, dateStr: string, type: 'hc' | 'ot'): number => {
@@ -718,7 +725,7 @@ export const AttendanceTab: React.FC = () => {
             </select>
             <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}
               className="bg-transparent border-none text-[0.9rem] font-bold text-slate-800 dark:text-slate-200 cursor-pointer outline-none">
-              {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
 
@@ -1163,14 +1170,14 @@ export const AttendanceTab: React.FC = () => {
       {/* ══════════ TABLE MODE ══════════ */}
       {viewMode === 'table' && (
         <>
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
           <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight">
               Bảng nhập điểm danh &amp; Giờ làm việc chi tiết
             </h3>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse text-left">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-xs border-collapse text-left min-w-full">
               <thead className="bg-[#122842] text-white uppercase text-[11px] font-bold">
                 <tr>
                   <th className="py-1 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-10 w-20">Mã NV</th>
@@ -1266,25 +1273,54 @@ export const AttendanceTab: React.FC = () => {
         </div>
 
         {/* ── Ma trận ngày HC/OT theo nhân viên ── */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-4">
-          <div ref={matrixScrollRef} className="overflow-x-auto max-h-[70vh] overflow-y-auto scroll-smooth">
-            <table className="border-collapse text-left text-xs w-max">
-              <thead className="bg-[#122842] text-white uppercase text-[12px] font-bold sticky top-0 z-20">
-                <tr>
-                  <th rowSpan={2} className="py-2 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle">Mã NV</th>
-                  <th rowSpan={2} className="py-2 px-2 border-r border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle">Họ Tên</th>
-                  {/* Freeze pane boundary — đường kẻ phân cách rõ giữa vùng cố định và vùng cuộn */}
-                  <th rowSpan={2} className="py-2 px-2 border-r-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)]">Loại giờ</th>
-
-                  <th colSpan={monthDays.length} className="py-1.5 text-center border-l border-slate-700/60 font-bold">
-                    Tháng {selectedMonth}/{selectedYear}
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-4 w-full">
+          <div ref={matrixScrollRef} className="overflow-x-auto max-h-[70vh] overflow-y-auto scroll-smooth w-full">
+            <table className="border-collapse text-left text-xs w-full min-w-full">
+              <thead className="sticky top-0 z-20 text-xs shadow-sm">
+                {/* Dòng 1: M/D (8/1, 8/2, ...) theo định dạng tham chiếu ảnh 1 */}
+                <tr className="bg-[#122842] text-white">
+                  <th rowSpan={2} className="py-2 px-2 border-r border-b-2 border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle uppercase text-[12px] font-bold">
+                    Mã NV
                   </th>
-                  <th rowSpan={2} className="py-2 px-2 text-center w-16 bg-amber-600 text-white sticky right-0 z-30 align-middle">Tổng</th>
-                </tr>
-                <tr className="bg-[#1a3552] text-slate-200 text-[12px] font-semibold">
+                  <th rowSpan={2} className="py-2 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[12px] font-bold">
+                    Họ Tên
+                  </th>
+                  {/* Freeze pane boundary — đường kẻ phân cách rõ giữa vùng cố định và vùng cuộn */}
+                  <th rowSpan={2} className="py-2 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[12px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
+                    Loại giờ
+                  </th>
+
+                  {/* Cột các ngày trong tháng: hiển thị M/D (8/1, 8/2...) nền xanh lá cho ngày thường, hồng cho Chủ Nhật */}
                   {monthDays.map((d) => (
-                    <th key={d.dateStr} className={`w-9 py-1 text-center border-l border-slate-700/40 font-normal ${d.isSunday ? 'text-red-300' : ''}`}>
-                      {pad2(d.day)}
+                    <th
+                      key={`date-${d.dateStr}`}
+                      className={`min-w-[34px] px-1 py-1 text-center font-bold text-[11px] border-r border-b border-dashed border-slate-400/80 ${
+                        d.isSunday
+                          ? 'bg-[#ffcdd2] text-[#991b1b] dark:bg-[#7f1d1d] dark:text-[#fecaca]'
+                          : 'bg-[#c8e6c9] text-[#134e4a] dark:bg-[#064e3b] dark:text-[#a7f3d0]'
+                      }`}
+                    >
+                      {selectedMonth}/{d.day}
+                    </th>
+                  ))}
+
+                  <th rowSpan={2} className="py-2 px-2 text-center w-16 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12px] font-bold">
+                    Tổng
+                  </th>
+                </tr>
+
+                {/* Dòng 2: Thứ trong tuần (Sat, Sun, Mon, Tue, Wed, Thu, Fri...) theo định dạng tham chiếu ảnh 1 */}
+                <tr>
+                  {monthDays.map((d) => (
+                    <th
+                      key={`dayname-${d.dateStr}`}
+                      className={`min-w-[34px] px-1 py-0.5 text-center font-bold text-[11px] bg-[#e2e8f0] dark:bg-slate-700 border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 ${
+                        d.isSunday
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-slate-800 dark:text-slate-200'
+                      }`}
+                    >
+                      {d.dayName}
                     </th>
                   ))}
                 </tr>
@@ -1314,15 +1350,20 @@ export const AttendanceTab: React.FC = () => {
                         <td rowSpan={2} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b border-slate-300 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden">
                           {emp.fullName}
                         </td>
-                        <td className="py-1 px-2 font-bold bg-blue-50/50 dark:bg-blue-950/30 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
-                          <span className="text-[10px] text-black dark:text-black">HC</span> <span className="text-[9.6px] font-normal text-black dark:text-black">(Công)</span>
+                        <td className="py-1 px-2 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
+                          <span className="text-[10px] text-black dark:text-white">HC</span> <span className="text-[9.6px] font-normal text-black dark:text-slate-300">(Công)</span>
                         </td>
 
                         {monthDays.map((d) => {
                           const val = getDayVal(emp.id, d.dateStr, 'hc');
                           const cong = val / 8; // Quy đổi HC sang đơn vị Công (8h = 1 công)
                           return (
-                            <td key={d.dateStr} className={`py-1 px-1 text-center border-r border-slate-200 dark:border-slate-700 text-[11px] ${d.isSunday ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
+                            <td
+                              key={d.dateStr}
+                              className={`py-1 px-1 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[11px] ${
+                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-semibold' : ''
+                              }`}
+                            >
                               {val > 0 ? cong.toFixed(1) : ''}
                             </td>
                           );
@@ -1336,14 +1377,19 @@ export const AttendanceTab: React.FC = () => {
 
                       {/* OT Row */}
                       <tr className="border-b-2 border-slate-400 dark:border-slate-700 hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
-                        <td className="py-1 px-2 font-bold text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/30 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)]">
+                        <td className="py-1 px-2 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)]">
                           OT
                         </td>
 
                         {monthDays.map((d) => {
                           const val = getDayVal(emp.id, d.dateStr, 'ot');
                           return (
-                            <td key={d.dateStr} className={`py-1 px-1 text-center border-r border-slate-200 dark:border-slate-700 text-[11px] ${d.isSunday ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
+                            <td
+                              key={d.dateStr}
+                              className={`py-1 px-1 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[11px] ${
+                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-semibold' : ''
+                              }`}
+                            >
                               {val > 0 ? val.toFixed(1) : ''}
                             </td>
                           );

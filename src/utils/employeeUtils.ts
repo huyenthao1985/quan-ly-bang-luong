@@ -59,6 +59,6 @@ export function compareEmployeeCode(idA?: string | null, idB?: string | null): n
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-export function sortEmployeesByCode<T extends { id: string }>(list: T[]): T[] {
+export function sortEmployeesByCode<T extends { id?: string | null }>(list: T[]): T[] {
   return [...list].sort((a, b) => compareEmployeeCode(a.id, b.id));
 }
