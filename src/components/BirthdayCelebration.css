@@ -1,0 +1,492 @@
+/* BirthdayCelebration.css
+   Overlay chúc mừng sinh nhật: 2 thanh "rèm" (bday-bar-top/bot) che thẻ,
+   trượt ra khi thêm class .is-open trên .bday-stage (giống thiệp mẫu),
+   sau đó hiện lời chúc (.bday-wish.is-in), bong bóng bay lên liên tục
+   và confetti rơi. Layout ngoài dùng Tailwind (đồng bộ với các tab khác);
+   riêng phần animation/gradient đặc thù của thẻ thì viết CSS riêng ở đây,
+   theo đúng cách EmployeeCarousel3D tách phần 3D/keyframes ra file .css riêng.
+
+   EPCC (birthday-overlay-visual-refresh) — nâng cấp giao diện: đổi gradient
+   thẻ sang tông xanh-ngọc/navy premium + ánh vàng, thêm bong bóng bay,
+   ruy băng cho lời chúc, chữ headline có hiệu ứng ánh kim thay vì màu phẳng.
+*/
+
+.bday-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  /* EPCC (birthday-overlay-reposition-resize) — đệm dưới lớn hơn đệm trên để
+     kéo cả thẻ + nút "Đóng" lên phía trên thay vì nằm giữa màn hình, vì thẻ
+     đã to hơn và dễ bị nút đè lên nội dung phía dưới khi căn giữa tuyệt đối. */
+  padding: 1.5vh 24px 10vh 24px;
+  background: rgba(4, 8, 12, 0.78);
+  backdrop-filter: blur(5px);
+  animation: bday-fade-in 0.35s ease both;
+}
+
+@keyframes bday-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bday-stage {
+  position: relative;
+  /* EPCC (birthday-overlay-font-fix-resize) — phóng to thẻ thêm ~30% nữa
+     (728px -> 946px) theo yêu cầu, vẫn giới hạn theo vw cho màn hình nhỏ. */
+  width: min(946px, 98vw);
+  aspect-ratio: 16 / 9.4;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #03181c;
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 214, 140, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* --- nền thẻ: xanh ngọc/navy premium thay cho gradient đỏ cũ --- */
+.bday-card-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(70% 55% at 22% 18%, rgba(255, 209, 122, 0.35) 0%, rgba(255, 209, 122, 0) 60%),
+    radial-gradient(120% 90% at 50% 100%, #0f6e63 0%, #0a3b4a 45%, #071c2c 78%, #03090f 100%);
+}
+
+.bday-card-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 20%, rgba(0, 0, 0, 0) 72%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.bday-card-bg::before {
+  /* vệt sáng bóng chéo góc trên, tạo cảm giác thẻ premium */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -20%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+
+/* --- vệt sáng lướt qua thẻ theo chu kỳ, tạo cảm giác thẻ "sống" hơn --- */
+.bday-shine-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bday-shine-sweep::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -60%;
+  width: 34%;
+  height: 140%;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0) 0%, rgba(255, 232, 190, 0.28) 45%, rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-18deg);
+  animation: bday-sweep 5.5s ease-in-out infinite;
+}
+@keyframes bday-sweep {
+  0% { left: -60%; }
+  38% { left: 130%; }
+  100% { left: 130%; }
+}
+
+/* --- lấp lánh sao nhỏ rải rác trên nền --- */
+.bday-sparkle-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.bday-sparkle {
+  position: absolute;
+  color: rgba(255, 224, 160, 0.85);
+  opacity: 0;
+  animation: bday-twinkle 2.6s ease-in-out infinite;
+}
+@keyframes bday-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+.bday-content {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  /* EPCC (birthday-cake-move-down-v2) — tăng đệm trên hẳn lên (8% -> 22%)
+     để "nhường chỗ" cho bánh phía trên, thay vì chỉ đẩy bánh xuống và vẫn
+     đè lên chữ "Chúc Mừng Sinh Nhật" như trước. Toàn bộ khối chữ giờ dịch
+     xuống theo, mở ra một khoảng trống rõ ràng ở đỉnh thẻ dành riêng cho
+     bánh, đúng như mũi tên người dùng khoanh xuống phía dưới vị trí cũ. */
+  padding: 22% 8% 6%;
+  gap: 4px;
+}
+
+.bday-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* EPCC (birthday-overlay-font-fix-resize) - FIX ROOT CAUSE "chữ có dấu đôi
+     (ố, ấ, ...) bị tách rời thành chữ cái + dấu cách + dấu thanh riêng":
+     font-style italic trên Georgia thiếu bộ glyph tiếng Việt có dấu tổ hợp
+     đầy đủ, khiến trình duyệt phải chắp fallback font cho riêng dấu thanh,
+     tạo khoảng cách lạ. Bỏ italic + chuyển sang font-family có phủ Unicode
+     tiếng Việt tốt hơn thay vì chỉ dựa vào Georgia italic. */
+  font-family: Georgia, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  letter-spacing: 0.28em;
+  text-transform: lowercase;
+  font-size: clamp(12px, 1.9vw, 17px);
+  color: rgba(253, 246, 236, 0.6);
+  margin: 0 0 10px;
+  opacity: 0;
+}
+.bday-prompt svg { width: 15px; height: 15px; }
+.bday-stage.is-open .bday-prompt {
+  animation: bday-rise 0.6s ease 0.15s forwards;
+}
+
+.bday-headline {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-weight: 900;
+  font-size: clamp(38px, 9.2vw, 65px);
+  line-height: 1.04;
+  margin: 0;
+  opacity: 0;
+  /* chữ ánh kim vàng thay vì màu trắng phẳng */
+  background: linear-gradient(180deg, #fff6e0 0%, #ffd77a 45%, #f2a93c 75%, #ffe9b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.45));
+}
+.bday-stage.is-open .bday-headline {
+  animation: bday-rise 0.65s ease 0.35s forwards;
+}
+
+.bday-name {
+  margin-top: 10px;
+  font-size: clamp(21px, 3.6vw, 31px);
+  font-weight: 700;
+  color: #fff;
+  opacity: 0;
+}
+.bday-stage.is-open .bday-name {
+  animation: bday-rise 0.55s ease 0.65s forwards;
+}
+
+.bday-meta {
+  margin-top: 8px;
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: rgba(253, 246, 236, 0.9);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 214, 140, 0.35);
+  padding: 5px 17px;
+  border-radius: 999px;
+  opacity: 0;
+}
+.bday-stage.is-open .bday-meta {
+  animation: bday-rise 0.55s ease 0.8s forwards;
+}
+
+.bday-underline {
+  width: 98px;
+  height: 12px;
+  margin-top: 16px;
+  opacity: 0;
+}
+.bday-stage.is-open .bday-underline {
+  animation: bday-rise 0.5s ease 0.95s forwards;
+}
+
+@keyframes bday-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- ruy băng chứa lời chúc, thay cho khối chữ nghiêng đơn thuần --- */
+.bday-wish {
+  margin-top: 20px;
+  max-width: 88%;
+  position: relative;
+  padding: 14px 26px;
+  color: #fff7e8;
+  /* EPCC (birthday-overlay-font-fix-resize) - FIX ROOT CAUSE: xem giải thích
+     ở .bday-prompt — bỏ italic Georgia (thiếu glyph dấu đôi tiếng Việt) để
+     "tốt", "nhất"... không còn bị tách thành chữ cái + dấu thanh rời rạc.
+     Theo yêu cầu: đổi sang Segoe Print cho nét chữ viết tay; giữ Georgia/
+     Segoe UI làm fallback vì Segoe Print không có sẵn trên mọi máy (chỉ có
+     mặc định trên Windows) và không phải font được thiết kế đầy đủ cho
+     tiếng Việt có dấu — nếu máy không có font này hoặc ký tự có dấu bị lỗi
+     tương tự, trình duyệt sẽ tự rớt xuống Georgia thường (không italic) để
+     tránh lặp lại lỗi tách dấu như ảnh trước. */
+  font-family: 'Segoe Print', Georgia, 'Segoe UI', Roboto, sans-serif;
+  font-style: normal;
+  font-size: 17px;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  background: linear-gradient(90deg, rgba(255, 214, 140, 0) 0%, rgba(255, 214, 140, 0.14) 15%, rgba(255, 214, 140, 0.14) 85%, rgba(255, 214, 140, 0) 100%);
+  border-top: 1px solid rgba(255, 214, 140, 0.35);
+  border-bottom: 1px solid rgba(255, 214, 140, 0.35);
+}
+.bday-wish.is-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- bong bóng bay lên liên tục phía sau chữ --- */
+.bday-balloon-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bday-balloon {
+  position: absolute;
+  bottom: -22%;
+  width: 36px;
+  height: 46px;
+  /* EPCC (birthday-overlay-motion-refresh) — dùng currentColor thay vì tự
+     build background/border theo từng quả trong TSX: chỉ cần set `color`
+     inline, mọi phần (thân bóng, highlight, nút thắt) tự đồng bộ 1 màu. */
+  color: var(--balloon-color, #ff8bb0);
+  background: radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 32%),
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.35), currentColor 62%);
+  border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%;
+  opacity: 0;
+  animation-name: bday-balloon-float;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: forwards;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3));
+}
+.bday-balloon::before {
+  /* nút thắt hình tam giác nhỏ ở đáy bóng, cho ra dáng bóng bay thật */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 7px solid currentColor;
+}
+.bday-balloon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -26px;
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.4);
+}
+@keyframes bday-balloon-float {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-5deg); }
+  10% { opacity: 0.92; }
+  30% { transform: translate(12px, -70%) rotate(4deg); }
+  55% { transform: translate(-11px, -135%) rotate(-4deg); }
+  80% { opacity: 0.85; transform: translate(9px, -205%) rotate(3deg); }
+  100% { opacity: 0; transform: translate(-6px, -270%) rotate(-2deg); }
+}
+
+/* --- bánh sinh nhật: thiết kế mới (bóng bay 2 bên + topper ngôi sao),
+   EPCC (birthday-cake-reposition-restyle) — chuyển từ vị trí "đội" nửa
+   thẻ, nửa bị overflow:hidden cắt mất (top: -4%) xuống nằm trọn trong thẻ
+   theo đúng vị trí người dùng khoanh/mũi tên chỉ trên ảnh chụp, đồng thời
+   phóng to nhẹ để lộ rõ chi tiết trang trí mới (bóng bay, hạt cườm, kẹo). */
+.bday-cake {
+  position: absolute;
+  top: 4%;
+  left: 50%;
+  z-index: 5;
+  width: clamp(96px, 14vw, 138px);
+  transform: translateX(-50%);
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.45));
+  animation: bday-cake-bounce 2.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+@keyframes bday-cake-bounce {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50% { transform: translateX(-50%) translateY(-4px) rotate(3deg); }
+}
+
+/* --- pháo hoa: các cụm tia nổ tỏa tròn quanh rìa thẻ, kèm tia chớp trung tâm --- */
+.bday-firework-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.bday-firework {
+  position: absolute;
+  width: 0;
+  height: 0;
+  color: var(--fw-color, #ffd77a);
+}
+.bday-firework::before {
+  /* tia chớp sáng bừng ở tâm ngay lúc pháo hoa "nổ" */
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  filter: blur(3px);
+  animation-name: bday-fw-flash;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+  animation-delay: var(--fw-delay, 0s);
+  animation-duration: var(--fw-duration, 3.2s);
+}
+.bday-firework-layer.is-active .bday-firework::before {
+  animation-play-state: running;
+}
+@keyframes bday-fw-flash {
+  0%, 55% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 0.95; transform: scale(1.5); }
+  75% { opacity: 0; transform: scale(2.6); }
+  100% { opacity: 0; }
+}
+.bday-fw-ray {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  transform-origin: 0 0;
+}
+.bday-fw-spark {
+  position: absolute;
+  top: 0;
+  left: -2.5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  animation-name: bday-fw-fly;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+  animation-delay: var(--fw-delay, 0s);
+  animation-duration: var(--fw-duration, 3.2s);
+  box-shadow: 0 0 8px currentColor, 0 0 2px #fff;
+}
+.bday-firework-layer.is-active .bday-fw-spark {
+  animation-play-state: running;
+}
+@keyframes bday-fw-fly {
+  0%, 55% { opacity: 0; transform: translateY(0) scale(0.5); }
+  60% { opacity: 1; transform: translateY(-8px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-58px) scale(0.25); }
+}
+
+.bday-confetti-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bday-confetti {
+  position: absolute;
+  top: -10%;
+  width: 8px;
+  height: 15px;
+  border-radius: 1px;
+  opacity: 0;
+  animation-name: bday-fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+.bday-confetti.is-round {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+@keyframes bday-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(0deg) scaleX(1); }
+  8% { opacity: 1; }
+  35% { transform: translateY(38%) rotate(160deg) scaleX(-1); }
+  70% { transform: translateY(85%) rotate(300deg) scaleX(1); }
+  100% { opacity: 0; transform: translateY(120%) rotate(420deg) scaleX(-1); }
+}
+
+.bday-bars {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+.bday-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16vh;
+  min-height: 40px;
+  background: #021216;
+  will-change: transform;
+  transition: transform 1.05s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.bday-bar-top { top: 0; transform: translateY(0); }
+.bday-bar-bot { bottom: 0; transform: translateY(0); }
+.bday-stage.is-open .bday-bar-top { transform: translateY(-100%); }
+.bday-stage.is-open .bday-bar-bot { transform: translateY(100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bday-overlay,
+  .bday-bar,
+  .bday-confetti,
+  .bday-balloon,
+  .bday-sparkle,
+  .bday-shine-sweep::before,
+  .bday-cake,
+  .bday-fw-spark,
+  .bday-firework::before,
+  .bday-wish {
+    animation: none !important;
+    transition: none !important;
+  }
+  .bday-fw-spark,
+  .bday-firework::before {
+    opacity: 0 !important;
+  }
+  .bday-stage.is-open .bday-bar-top,
+  .bday-stage.is-open .bday-bar-bot {
+    transform: none;
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .bday-headline {
+    font-size: clamp(22px, 8vw, 32px);
+  }
+}

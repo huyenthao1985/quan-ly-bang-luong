@@ -7,6 +7,7 @@ import { EmployeeProfilesTab } from './components/tabs/EmployeeProfilesTab';
 import { AttendanceTab } from './components/tabs/AttendanceTab';
 import { PayrollTab } from './components/tabs/PayrollTab';
 import { ToastContainer } from './components/ToastContainer';
+import { BirthdayCelebration } from './components/BirthdayCelebration';
 // EPCC (payroll-simple-role-gate) — theo yêu cầu người dùng: thêm đăng nhập
 // thật cho app Bảng lương (tái tạo lại LoginGate + dùng chung client
 // Supabase hiện có), phân quyền đơn giản 3 role (Staff/OP/Manager), chỉ
@@ -59,6 +60,9 @@ const AppShell: React.FC = () => {
         <Header />
         <MainContent />
         <ToastContainer />
+        {/* EPCC (birthday-celebration-overlay) — hiển thị bất kể đang ở tab
+            nào, chỉ hiện khi có nhân viên trùng ngày sinh với hôm nay */}
+        <BirthdayCelebration />
 
         <footer
           className="border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 w-full"

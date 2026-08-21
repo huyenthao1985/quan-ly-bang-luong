@@ -88,20 +88,20 @@ export const DashboardTab: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-1.5" style={{ paddingBottom: '0.5mm' }}>
       {/* Top Banner & Date Selector */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-800 px-4 py-2.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <LayoutDashboardIcon className="w-5 h-5 text-blue-600" />
             Báo Cáo Tổng Quan & Thống Kê KPI
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Theo dõi tình hình nhân sự, tổng chi phí lương và xu hướng tăng ca (HC vs OT)
           </p>
         </div>
 
-        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
           <Calendar className="w-4 h-4 text-blue-600" />
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Kỳ lương:</span>
@@ -132,89 +132,89 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
         {/* Card 1: Tổng Nhân Viên */}
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-3.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
               Tổng Nhân Viên
             </p>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">
+            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">
               {totalEmployees} <span className="text-xs font-normal text-slate-500">người</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Nam: <span className="font-semibold text-blue-600">{maleEmployees}</span> | Nữ: <span className="font-semibold text-pink-600">{femaleEmployees}</span>
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-            <Users className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 2: Quỹ Lương Thực Lĩnh */}
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-3.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
               Tổng Thực Lĩnh
             </p>
-            <h3 className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+            <h3 className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
               {formatVND(totalPayrollCost)}
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Tháng {selectedMonth}/{selectedYear}
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
             <DollarSign className="w-6 h-6" />
           </div>
         </div>
 
         {/* Card 3: Tổng Giờ HC */}
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-3.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
               Tổng Giờ HC
             </p>
-            <h3 className="text-2xl font-black text-blue-700 dark:text-blue-400 mt-1">
+            <h3 className="text-2xl font-black text-blue-700 dark:text-blue-400 mt-0.5">
               {totalHcHours.toFixed(1)} <span className="text-xs font-normal text-slate-500">giờ</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               TB: {totalEmployees ? (totalHcHours / totalEmployees).toFixed(1) : 0}h/NV
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
-            <Clock className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center">
+            <Clock className="w-5 h-5" />
           </div>
         </div>
 
         {/* Card 4: Tổng Giờ Tăng Ca (OT) */}
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-800 p-3.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
               Tổng Giờ Tăng Ca (OT)
             </p>
-            <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">
+            <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5">
               {totalOtHours.toFixed(1)} <span className="text-xs font-normal text-slate-500">giờ</span>
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-0.5">
               Gồm OT 150%, CN 200%, Lễ 300%
             </p>
           </div>
-          <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
-            <TrendingUp className="w-6 h-6" />
+          <div className="w-11 h-11 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         {/* Chart 1: Quỹ lương theo phòng ban */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-blue-600" />
             Chi Phí Lương Theo Phòng Ban
           </h3>
-          <div className="h-64">
+          <div className="h-[314px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentSalaryData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
@@ -231,12 +231,12 @@ export const DashboardTab: React.FC = () => {
         </div>
 
         {/* Chart 2: Cơ cấu vị trí nhân sự */}
-        <div className="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
             <Award className="w-4 h-4 text-emerald-600" />
             Cơ Cấu Vị Trí Nhân Sự
           </h3>
-          <div className="h-64 flex items-center justify-center">
+          <div className="h-[314px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -245,7 +245,7 @@ export const DashboardTab: React.FC = () => {
                   cy="50%"
                   labelLine={false}
                   label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={80}
+                  outerRadius={105}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -262,12 +262,15 @@ export const DashboardTab: React.FC = () => {
       </div>
 
       {/* Chart Row 2: Monthly Trends */}
-      <div className="bg-white dark:bg-slate-800 p-5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+      <div
+        className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700"
+        style={{ marginBottom: '0.5mm' }}
+      >
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-purple-600" />
           Xu Hướng Tổng Giờ Làm Chuẩn (HC) vs Tăng Ca (OT) Các Tháng
         </h3>
-        <div className="h-72">
+        <div className="h-[336px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
