@@ -251,10 +251,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
         {authRole && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'rgba(207,220,0,0.14)', border: '1px solid rgba(207,220,0,0.3)',
+            background: '#0000FF', border: '1px solid rgba(255,255,255,0.25)',
             borderRadius: '10px', padding: '6px 8px',
           }}>
-            <Shield size={14} color="#cfdc00" style={{ flexShrink: 0 }} />
+            <Shield size={14} color="#ffffff" style={{ flexShrink: 0 }} />
             <span style={{ fontSize: '12px', fontWeight: 700, color: '#fff', flex: 1 }}>
               {ROLE_LABEL[authRole as keyof typeof ROLE_LABEL]?.vi ?? authRole}
             </span>
@@ -268,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
                   display: 'flex', alignItems: 'center', padding: '2px',
                 }}
               >
-                <UserCog size={14} color="#cfdc00" />
+                <UserCog size={14} color="#ffffff" />
               </button>
             )}
             <button
@@ -280,7 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
                 display: 'flex', alignItems: 'center', padding: '2px',
               }}
             >
-              <LogOut size={14} color="#cfe8e6" />
+              <LogOut size={14} color="#ffffff" />
             </button>
           </div>
         )}
@@ -288,10 +288,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
         {/* Role switcher (giả lập, dùng nội bộ — KHÔNG phải quyền đăng nhập thật) */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '6px',
-          background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+          background: '#0000FF', border: '1px solid rgba(255,255,255,0.25)',
           borderRadius: '10px', padding: '6px 8px',
         }}>
-          <RoleIcon size={14} color="#cfe8e6" style={{ flexShrink: 0 }} />
+          <RoleIcon size={14} color="#ffffff" style={{ flexShrink: 0 }} />
           <select
               value={activeRole}
               onChange={(e) => setActiveRole(e.target.value as UserRole)}
@@ -300,21 +300,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
                 fontWeight: 600, border: 'none', outline: 'none', cursor: 'pointer', flex: 1, minWidth: 0,
               }}
             >
-              <option value="Admin" style={{ background: '#0b1220', color: '#fff' }}>Admin (Quản trị)</option>
-              <option value="Leader" style={{ background: '#0b1220', color: '#fff' }}>Leader (Trưởng nhóm)</option>
-              <option value="User" style={{ background: '#0b1220', color: '#fff' }}>User (Xem lương)</option>
+              <option value="Admin" style={{ background: '#0000FF', color: '#fff' }}>Admin (Quản trị)</option>
+              <option value="Leader" style={{ background: '#0000FF', color: '#fff' }}>Leader (Trưởng nhóm)</option>
+              <option value="User" style={{ background: '#0000FF', color: '#fff' }}>User (Xem lương)</option>
           </select>
         </div>
 
         {/* User badge hiện tại */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: '6px',
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          background: '#0000FF', border: '1px solid rgba(255,255,255,0.25)',
           borderRadius: '10px', padding: '6px 8px',
         }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', flexShrink: 0 }} />
           <span style={{
-            fontSize: '12px', fontWeight: 500, color: '#e2e8f0',
+            fontSize: '12px', fontWeight: 600, color: '#ffffff',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {currentUser?.name}
@@ -325,13 +325,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
         <button
           onClick={toggleTheme}
           style={{
-            height: '32px', border: 'none', background: 'rgba(255,255,255,0.14)',
+            height: '32px', border: 'none', background: '#0000FF',
             borderRadius: '999px', cursor: 'pointer', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: '6px', color: '#fff', fontSize: '12px', fontWeight: 500,
+            justifyContent: 'center', gap: '6px', color: '#fff', fontSize: '12px', fontWeight: 600,
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
           }}
           title="Đổi giao diện Sáng / Tối"
         >
-          {theme === 'dark' ? <Sun size={14} color="#fbbf24" /> : <Moon size={14} color="#cbd5e1" />}
+          {theme === 'dark' ? <Sun size={14} color="#fbbf24" /> : <Moon size={14} color="#ffffff" />}
           {theme === 'dark' ? 'Sáng' : 'Tối'}
         </button>
       </div>
