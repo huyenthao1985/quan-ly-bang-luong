@@ -1168,7 +1168,7 @@ export const AttendanceTab: React.FC = () => {
 
       {/* ══════════ TABLE MODE ══════════ */}
       {viewMode === 'table' && (
-        <>
+        <div className="space-y-[2mm] w-full">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
           <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
             <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight">
@@ -1272,7 +1272,7 @@ export const AttendanceTab: React.FC = () => {
         </div>
 
         {/* ── Ma trận ngày HC/OT theo nhân viên ── */}
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden mt-4 w-full">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
           <div ref={matrixScrollRef} className="overflow-x-auto max-h-[70vh] overflow-y-auto scroll-smooth w-full">
             <table className="border-collapse text-left text-xs w-full min-w-full">
               <thead className="sticky top-0 z-20 text-xs shadow-sm">
@@ -1401,7 +1401,7 @@ export const AttendanceTab: React.FC = () => {
             </table>
           </div>
         </div>
-        </>
+        </div>
       )}
     </div>
   );
