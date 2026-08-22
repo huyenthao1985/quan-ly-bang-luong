@@ -137,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
           left: 0;
           height: 100vh;
           width: 210px !important;
-          background: #330033 !important;
+          background: #003333 !important;
           transform: translateX(calc(-100% - 4px));
           transition: transform 0.25s ease;
           z-index: 1000;
