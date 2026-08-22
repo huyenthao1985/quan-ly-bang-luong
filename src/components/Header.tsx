@@ -20,8 +20,8 @@ import React from 'react';
 export const Header: React.FC = () => {
   return (
     <header
-      className="bg-[#FF6666] dark:bg-[#FF6666] text-white shadow-md sticky top-0 z-40 px-4 border-b border-[#e55353] transition-colors flex items-center relative"
-      style={{ backgroundColor: '#FF6666', height: '60px', boxSizing: 'border-box' }}
+      className="bg-[#CC9966] dark:bg-[#CC9966] text-white shadow-md sticky top-0 z-40 px-4 border-b border-[#b88452] transition-colors flex items-center relative"
+      style={{ backgroundColor: '#CC9966', height: '60px', boxSizing: 'border-box' }}
     >
       <div className="w-full px-2 sm:px-4 md:px-5 flex items-center justify-center gap-3">
         {/* EPCC (remove-p-badge) — theo yêu cầu người dùng: bỏ khối logo chữ
