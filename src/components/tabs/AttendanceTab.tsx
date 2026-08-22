@@ -537,8 +537,7 @@ export const AttendanceTab: React.FC = () => {
     if (!rec?.dailyRecords) return [];
     return (Object.values(rec.dailyRecords) as (DailyAttendance & { isManual?: boolean })[])
       .filter(d => d.isManual === true)
-      .sort((a, b) => a.date > b.date ? -1 : 1)
-      .slice(0, 10);
+      .sort((a, b) => a.date > b.date ? -1 : 1);
   }, [selEmpId, selectedYear, selectedMonth, attendanceRecords]);
 
   const stats = useMemo(() => {
@@ -705,14 +704,14 @@ export const AttendanceTab: React.FC = () => {
     // khoảng cách Topbar -> 2 card thông tin bên dưới theo đúng 2mm mà App.tsx
     // đang dùng cho khoảng cách Header -> Card đầu tiên (trước đây space-y-4
     // = 16px, rộng gấp đôi 2mm ~ 7.6px nên nhìn không đều).
-    <div className="space-y-[2mm]">
+    <div className="space-y-[2mm] flex-1 flex flex-col min-h-0">
       {/* ── Top Bar ── */}
       {/* EPCC (remove-autofill-bigger-topbar-text) - FIX theo yêu cầu người
           dùng: (1) xóa hẳn nút "Điền tự động tháng .../..." (đã bị gạch chéo
           trong ảnh mẫu, không dùng nữa); (2) tăng cỡ chữ toàn vùng khoanh đỏ
           (ô "Kỳ:"/dropdown Tháng-Năm/3 nút chuyển view) lên 20% so với cỡ cũ
           (text-xs = 0.75rem -> 0.9rem = 0.75rem * 1.2). */}
-      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period selector */}
           <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -755,7 +754,7 @@ export const AttendanceTab: React.FC = () => {
         // EPCC (gap-sync-2mm-with-header) - đồng bộ khoảng cách 2 card thông
         // tin -> bảng "Danh sách điểm danh gần đây" theo đúng 2mm (xem ghi
         // chú ở div bọc ngoài phía trên).
-        <div className="space-y-[2mm]">
+        <div className="space-y-[2mm] flex-1 flex flex-col min-h-0">
           {/* Form cards */}
           {/* EPCC (merge-2-cards-into-1-mobile-friendly) - FIX theo yêu cầu
               người dùng: trước đây có 2 card riêng "Thông tin chấm công"
@@ -766,7 +765,7 @@ export const AttendanceTab: React.FC = () => {
               dọc — hợp lý hơn hẳn khi xem trên điện thoại. Đồng thời xoá hẳn
               dòng tiêu đề chữ "Thông tin chấm công" theo yêu cầu người dùng
               (không còn header bar trên cùng của card nữa). */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden shrink-0">
             <div className="p-2.5 space-y-2">
               {/* Dòng 1: Giờ bắt đầu + Giờ kết thúc + Nút Lưu (cùng dòng) */}
               <div className="grid grid-cols-5 gap-2 items-end">
@@ -883,13 +882,13 @@ export const AttendanceTab: React.FC = () => {
           </div>
 
 
-          {/* Recent records table */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          {/* Recent records table (Card 3) */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+            <div className="overflow-x-auto overflow-y-auto flex-1">
               <table className="w-full text-xs">
                 {/* EPCC (date-first-no-stt) - FIX theo yêu cầu người dùng:
                     bỏ hẳn cột "STT", chuyển cột "Ngày" lên vị trí đầu tiên. */}
-                <thead className="bg-[#122842] text-white text-[11px] font-bold uppercase">
+                <thead className="bg-[#122842] text-white text-[11px] font-bold uppercase sticky top-0 z-10">
                   <tr>
                     {/* EPCC (add-night-allowance-30-50-columns) - FIX theo
                         yêu cầu người dùng: thêm 2 cột "PC Đêm 30%" (nightHours)
