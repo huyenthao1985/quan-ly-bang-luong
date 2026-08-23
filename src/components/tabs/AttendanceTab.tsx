@@ -331,6 +331,10 @@ export const AttendanceTab: React.FC = () => {
   const [sH, setSH] = useState(7);  const [sMin, setSMin] = useState(30); const [sAP, setSAP] = useState<'AM' | 'PM'>('AM');
   const [eH, setEH] = useState(5);  const [eMin, setEMin] = useState(0);  const [eAP, setEAP] = useState<'AM' | 'PM'>('PM');
 
+  const isCurrentDaySunday = useMemo(() => {
+    return new Date(eYr, eMon - 1, eDay).getDay() === 0;
+  }, [eYr, eMon, eDay]);
+
   const hcAuto = useMemo(() => {
     const s = toDecHours(sH, sMin, sAP);
     const e = toDecHours(eH, eMin, eAP);
@@ -338,11 +342,11 @@ export const AttendanceTab: React.FC = () => {
   }, [sH, sMin, sAP, eH, eMin, eAP]);
 
   const otAuto = useMemo(() => {
-    if (otType === 'none') return 0;
+    if (otType === 'none' && !isCurrentDaySunday) return 0;
     const s = toDecHours(sH, sMin, sAP);
     const e = toDecHours(eH, eMin, eAP);
     return calcOtHours(s, e);
-  }, [sH, sMin, sAP, eH, eMin, eAP, otType]);
+  }, [sH, sMin, sAP, eH, eMin, eAP, otType, isCurrentDaySunday]);
 
   // ── Inline-edit state cho bảng "Danh sách điểm danh gần đây" ─────────────
   // editingDate = ngày (key gốc) của bản ghi đang mở sửa; null = không có dòng nào đang sửa.
@@ -415,6 +419,9 @@ export const AttendanceTab: React.FC = () => {
   const commitCellEdit = (rec: DailyAttendance) => {
     if (!selEmpId || !cellEdit) return;
     const { field } = cellEdit;
+    const parts = rec.date.split('-').map(Number);
+    const isSun = parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
     if (field === 'shift') {
       const isNight = cellVal === 'night';
       // Khi đổi ca → tính lại HC/OT từ giờ vào-ra hiện tại
@@ -426,8 +433,14 @@ export const AttendanceTab: React.FC = () => {
       const ot = calcOtHours(startD, endD);
       // EPCC (night-shift-ot-fix) - Ca đêm: nightHours là PC 30% (22:00-05:00), otHours là số giờ tăng ca thực tế (calcOtHours)
       updateAttendanceDay(selEmpId, rec.date, 'nightHours',  isNight ? calcNightAllowance30(startD, endD) : 0);
-      updateAttendanceDay(selEmpId, rec.date, 'hcHours',     hc);
-      updateAttendanceDay(selEmpId, rec.date, 'otHours',     ot);
+      if (isSun) {
+        updateAttendanceDay(selEmpId, rec.date, 'hcHours', 0);
+        updateAttendanceDay(selEmpId, rec.date, 'otHours', 0);
+        updateAttendanceDay(selEmpId, rec.date, 'sundayHours', hc + ot);
+      } else {
+        updateAttendanceDay(selEmpId, rec.date, 'hcHours', hc);
+        updateAttendanceDay(selEmpId, rec.date, 'otHours', ot);
+      }
       showToast(`Đổi ca ngày ${rec.date} → ${isNight ? 'Ca đêm' : 'Ca ngày'}`);
     } else if (field === 'checkIn' || field === 'checkOut') {
       // Lưu giờ vào/ra mới và tính lại HC (+ PC đêm 30% nếu là ca đêm)
@@ -439,26 +452,44 @@ export const AttendanceTab: React.FC = () => {
       const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
       const ot = calcOtHours(startD, endD);
-      updateAttendanceDay(selEmpId, rec.date, 'hcHours', hc);
-      updateAttendanceDay(selEmpId, rec.date, 'otHours', ot);
+      if (isSun) {
+        updateAttendanceDay(selEmpId, rec.date, 'hcHours', 0);
+        updateAttendanceDay(selEmpId, rec.date, 'otHours', 0);
+        updateAttendanceDay(selEmpId, rec.date, 'sundayHours', hc + ot);
+      } else {
+        updateAttendanceDay(selEmpId, rec.date, 'hcHours', hc);
+        updateAttendanceDay(selEmpId, rec.date, 'otHours', ot);
+      }
       if (isNight) {
         updateAttendanceDay(selEmpId, rec.date, 'nightHours', calcNightAllowance30(startD, endD));
       } else {
         updateAttendanceDay(selEmpId, rec.date, 'nightHours', 0);
       }
-      showToast(`Cập nhật giờ ngày ${rec.date}: vào ${inStr} → ra ${outStr}, HC=${hc.toFixed(1)}h | OT=${ot.toFixed(1)}h`);
+      showToast(`Cập nhật giờ ngày ${rec.date}: vào ${inStr} → ra ${outStr}, ${isSun ? `CN 200%=${(hc + ot).toFixed(1)}h` : `HC=${hc.toFixed(1)}h | OT=${ot.toFixed(1)}h`}`);
     } else if (field === 'hcHours') {
       const val = parseFloat(cellVal);
       if (!isNaN(val) && val >= 0) {
-        updateAttendanceDay(selEmpId, rec.date, 'hcHours', val);
-        showToast(`Cập nhật HC ngày ${rec.date}: ${val.toFixed(1)}h`);
+        if (isSun) {
+          updateAttendanceDay(selEmpId, rec.date, 'hcHours', 0);
+          updateAttendanceDay(selEmpId, rec.date, 'sundayHours', val);
+          showToast(`Ngày Chủ nhật ${rec.date}: chuyển ${val.toFixed(1)}h sang CN 200% (HC=0h)`);
+        } else {
+          updateAttendanceDay(selEmpId, rec.date, 'hcHours', val);
+          showToast(`Cập nhật HC ngày ${rec.date}: ${val.toFixed(1)}h`);
+        }
       }
     } else if (field === 'otHours') {
       const val = parseFloat(cellVal);
       if (!isNaN(val) && val >= 0) {
-        // Chỉ ghi otHours; nightHours/sundayHours/holidayHours GIỮ NGUYÊN
-        updateAttendanceDay(selEmpId, rec.date, 'otHours', val);
-        showToast(`Cập nhật OT ngày ${rec.date}: ${val.toFixed(1)}h`);
+        if (isSun) {
+          updateAttendanceDay(selEmpId, rec.date, 'hcHours', 0);
+          updateAttendanceDay(selEmpId, rec.date, 'otHours', 0);
+          updateAttendanceDay(selEmpId, rec.date, 'sundayHours', val);
+          showToast(`Cập nhật CN 200% ngày ${rec.date}: ${val.toFixed(1)}h`);
+        } else {
+          updateAttendanceDay(selEmpId, rec.date, 'otHours', val);
+          showToast(`Cập nhật OT ngày ${rec.date}: ${val.toFixed(1)}h`);
+        }
       }
     }
     setCellEdit(null);
@@ -504,10 +535,20 @@ export const AttendanceTab: React.FC = () => {
     }
 
     const applyTo = (dateKey: string) => {
-      updateAttendanceDay(selEmpId, dateKey, 'hcHours', hcH);
-      updateAttendanceDay(selEmpId, dateKey, 'otHours', otH);
+      const parts = dateKey.split('-').map(Number);
+      const isSun = parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+      if (isSun) {
+        // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200%, KHÔNG tính HC công
+        updateAttendanceDay(selEmpId, dateKey, 'hcHours', 0);
+        updateAttendanceDay(selEmpId, dateKey, 'otHours', 0);
+        updateAttendanceDay(selEmpId, dateKey, 'sundayHours', hcH + otH);
+      } else {
+        updateAttendanceDay(selEmpId, dateKey, 'hcHours', hcH);
+        updateAttendanceDay(selEmpId, dateKey, 'otHours', otH);
+        updateAttendanceDay(selEmpId, dateKey, 'sundayHours', rec.sundayHours || 0);
+      }
       updateAttendanceDay(selEmpId, dateKey, 'nightHours', nightH);
-      updateAttendanceDay(selEmpId, dateKey, 'sundayHours', rec.sundayHours || 0);
       updateAttendanceDay(selEmpId, dateKey, 'holidayHours', rec.holidayHours || 0);
       updateAttendanceDay(selEmpId, dateKey, 'isManual', true);
       updateAttendanceDay(selEmpId, dateKey, 'checkIn',  fmtTime24(editSH, editSMin, editSAP));
@@ -528,7 +569,13 @@ export const AttendanceTab: React.FC = () => {
     }
 
     setEditingDate(null);
-    showToast(`Đã sửa điểm danh ngày ${editDate}: HC=${hcH.toFixed(1)}h | OT=${otH.toFixed(1)}h`);
+    const parts = editDate.split('-').map(Number);
+    const isSun = parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+    if (isSun) {
+      showToast(`Đã sửa điểm danh Chủ nhật ${editDate}: CN 200%=${(hcH + otH).toFixed(1)}h (không tính công HC)`);
+    } else {
+      showToast(`Đã sửa điểm danh ngày ${editDate}: HC=${hcH.toFixed(1)}h | OT=${otH.toFixed(1)}h`);
+    }
   };
 
   const recentRecs = useMemo(() => {
@@ -546,19 +593,30 @@ export const AttendanceTab: React.FC = () => {
     if (!rec?.dailyRecords) return { hc: 0, ot: 0 };
     let hc = 0, ot = 0;
     (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
-      hc += d.hcHours || 0;
-      let dayOt = d.otHours || 0;
-      if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
-        const dIn = parseTime24(d.checkIn);
-        const dOut = parseTime24(d.checkOut);
-        const sDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
-        const eDec = toDecHours(dOut.h, dOut.m, dOut.ampm);
-        const legacyPc50 = calcNightAllowance50(sDec, eDec);
-        if (dayOt === legacyPc50) {
-          dayOt = calcOtHours(sDec, eDec);
+      const parts = d.date?.split('-').map(Number);
+      const isSunday = parts && parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+      if (isSunday) {
+        // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200%, không tính ngày công HC
+        const sunH = (d.sundayHours || 0) > 0
+          ? ((d.sundayHours || 0) + (d.hcHours || 0) + (d.otHours || 0))
+          : ((d.hcHours || 0) + (d.otHours || 0));
+        ot += sunH;
+      } else {
+        hc += d.hcHours || 0;
+        let dayOt = d.otHours || 0;
+        if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
+          const dIn = parseTime24(d.checkIn);
+          const dOut = parseTime24(d.checkOut);
+          const sDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
+          const eDec = toDecHours(dOut.h, dOut.m, dOut.ampm);
+          const legacyPc50 = calcNightAllowance50(sDec, eDec);
+          if (dayOt === legacyPc50) {
+            dayOt = calcOtHours(sDec, eDec);
+          }
         }
+        ot += dayOt + (d.sundayHours || 0) + (d.holidayHours || 0);
       }
-      ot += dayOt + (d.sundayHours || 0) + (d.holidayHours || 0);
     });
     return { hc, ot };
   }, [selEmpId, selectedYear, selectedMonth, attendanceRecords]);
@@ -566,31 +624,43 @@ export const AttendanceTab: React.FC = () => {
   const doSave = () => {
     if (!selEmpId) { setSaveAttempted(true); showToast('Vui lòng chọn nhân viên!', 'error'); return; }
     const ds = `${eYr}-${pad2(eMon)}-${pad2(eDay)}`;
+    const isSun = new Date(eYr, eMon - 1, eDay).getDay() === 0;
     let hcH = 0, otH = 0, nightH = 0, sunH = 0, holH = 0, lpD = 0, laD = 0, luD = 0;
 
-    if (status !== 'absent_paid' && status !== 'absent_annual' && status !== 'absent_unpaid') {
-      hcH = hcAuto;
-    }
+    if (isSun || status === 'sunday' || otType === 'sunday200') {
+      // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200%, KHÔNG tính HC công
+      if (status !== 'absent_paid' && status !== 'absent_annual' && status !== 'absent_unpaid') {
+        const sDec = toDecHours(sH, sMin, sAP);
+        const eDec = toDecHours(eH, eMin, eAP);
+        const rawOt = calcOtHours(sDec, eDec);
+        sunH = hcAuto + rawOt;
+        hcH = 0;
+        otH = 0;
+        if (shift === 'night') {
+          nightH = calcNightAllowance30(sDec, eDec);
+        }
+      }
+    } else {
+      if (status !== 'absent_paid' && status !== 'absent_annual' && status !== 'absent_unpaid') {
+        hcH = hcAuto;
+      }
 
-    if (shift === 'night') {
-      // EPCC (night-shift-ot-fix) - PC ca đêm 30% = khung 22:00–05:00 (tối đa 6h),
-      // OT (otHours) = số giờ làm thêm thực tế (05:00–08:00 = 3h) từ otAuto.
-      const sDec = toDecHours(sH, sMin, sAP);
-      const eDec = toDecHours(eH, eMin, eAP);
-      nightH = calcNightAllowance30(sDec, eDec);
-      if (otType === 'sunday200') {
-        sunH = otAuto;
+      if (shift === 'night') {
+        // EPCC (night-shift-ot-fix) - PC ca đêm 30% = khung 22:00–05:00 (tối đa 6h),
+        // OT (otHours) = số giờ làm thêm thực tế (05:00–08:00 = 3h) từ otAuto.
+        const sDec = toDecHours(sH, sMin, sAP);
+        const eDec = toDecHours(eH, eMin, eAP);
+        nightH = calcNightAllowance30(sDec, eDec);
+        if (otType === 'holiday300') {
+          holH = otAuto;
+        } else {
+          otH = otAuto;
+        }
       } else if (otType === 'holiday300') {
         holH = otAuto;
       } else {
         otH = otAuto;
       }
-    } else if (otType === 'sunday200') {
-      sunH = otAuto;
-    } else if (otType === 'holiday300') {
-      holH = otAuto;
-    } else {
-      otH = otAuto;
     }
 
     if (status === 'absent_paid'   || specialDay === 'leavePaid')   lpD = 1;
@@ -612,7 +682,11 @@ export const AttendanceTab: React.FC = () => {
     updateAttendanceDay(selEmpId, ds, 'checkOut', fmtTime24(eH, eMin, eAP));
 
     const nm = employees.find(e => e.id === selEmpId)?.fullName;
-    showToast(`Đã lưu điểm danh ngày ${pad2(eDay)}/${pad2(eMon)}/${eYr} cho ${nm}! HC=${hcH}h | OT=${otH + sunH + holH}h`);
+    if (isSun || sunH > 0) {
+      showToast(`Đã lưu điểm danh Chủ nhật ${pad2(eDay)}/${pad2(eMon)}/${eYr} cho ${nm}! CN 200% = ${sunH}h (không tính công HC)`);
+    } else {
+      showToast(`Đã lưu điểm danh ngày ${pad2(eDay)}/${pad2(eMon)}/${eYr} cho ${nm}! HC=${hcH}h | OT=${otH + holH}h`);
+    }
     setSaveAttempted(false);
 
     // EPCC (checkin-sets-viewer-identity) — sau khi điểm danh xong, nhớ nhân viên này là
@@ -679,6 +753,19 @@ export const AttendanceTab: React.FC = () => {
     const rec = attendanceRecords[`${empId}_${selectedYear}_${selectedMonth}`];
     const d = rec?.dailyRecords?.[dateStr] as DailyAttendance | undefined;
     if (!d) return 0;
+    const parts = dateStr.split('-').map(Number);
+    const isSunday = parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+    if (isSunday) {
+      // EPCC (sunday-work-200-percent-no-hc-day): Ngày Chủ Nhật không tính ngày công HC (luôn = 0)
+      if (type === 'hc') return 0;
+      // Cột OT hiển thị toàn bộ giờ làm việc ngày Chủ Nhật (hưởng 200%)
+      const sunHours = (d.sundayHours || 0) > 0
+        ? ((d.sundayHours || 0) + (d.hcHours || 0) + (d.otHours || 0))
+        : ((d.hcHours || 0) + (d.otHours || 0));
+      return sunHours;
+    }
+
     if (type === 'hc') return d.hcHours || 0;
     let otVal = d.otHours || 0;
     if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
@@ -820,7 +907,25 @@ export const AttendanceTab: React.FC = () => {
                   <label className="block text-[10px] font-bold text-red-500 mb-0.5">● Ngày</label>
                   <input type="date"
                     value={`${eYr}-${pad2(eMon)}-${pad2(eDay)}`}
-                    onChange={e => { const d = new Date(e.target.value); if (!isNaN(d.getTime())) { setEDay(d.getDate()); setEMon(d.getMonth() + 1); setEYr(d.getFullYear()); } }}
+                    onChange={e => {
+                      const d = new Date(e.target.value);
+                      if (!isNaN(d.getTime())) {
+                        const newD = d.getDate();
+                        const newM = d.getMonth() + 1;
+                        const newY = d.getFullYear();
+                        setEDay(newD);
+                        setEMon(newM);
+                        setEYr(newY);
+                        const isSun = new Date(newY, newM - 1, newD).getDay() === 0;
+                        if (isSun) {
+                          setStatus('sunday');
+                          setOtType('sunday200');
+                        } else if (status === 'sunday') {
+                          setStatus('present');
+                          setOtType('none');
+                        }
+                      }
+                    }}
                     className="w-full h-[32px] px-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md text-slate-800 dark:text-slate-200 font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none" />
                 </div>
 
@@ -839,28 +944,49 @@ export const AttendanceTab: React.FC = () => {
                   rowCls="bg-yellow-50 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-700 text-slate-800 dark:text-slate-100 focus:ring-yellow-400"
                 />
                 <div>
-                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">HC (h)</label>
-                  <div className="h-[32px] px-2 bg-green-50 dark:bg-green-950/30 border border-green-400 dark:border-green-600 rounded-md text-green-800 dark:text-green-300 font-bold text-xs flex items-center justify-between">
-                    <span>{hcAuto % 1 === 0 ? hcAuto.toFixed(1) : hcAuto}</span>
-                    <span className="text-[9px] font-normal text-green-600/70">(= {(hcAuto / 8).toFixed(3)} công)</span>
+                  <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
+                    {isCurrentDaySunday ? 'HC (Chủ nhật 200%)' : 'HC (h)'}
+                  </label>
+                  <div className={`h-[32px] px-2 rounded-md font-bold text-xs flex items-center justify-between border ${
+                    isCurrentDaySunday
+                      ? 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
+                      : 'bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600 text-green-800 dark:text-green-300'
+                  }`}>
+                    <span>{isCurrentDaySunday ? '0.0' : (hcAuto % 1 === 0 ? hcAuto.toFixed(1) : hcAuto)}</span>
+                    <span className={`text-[9px] font-normal ${isCurrentDaySunday ? 'text-red-500 font-semibold' : 'text-green-600/70'}`}>
+                      {isCurrentDaySunday ? '(Chủ nhật tính 200%)' : `(= ${(hcAuto / 8).toFixed(3)} công)`}
+                    </span>
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] font-semibold text-amber-600 mb-0.5">
-                    {shift === 'night' ? '🌙 Ca đêm' : '⏰ OT (h)'}
+                    {isCurrentDaySunday ? '🔴 CN 200% (h)' : (shift === 'night' ? '🌙 Ca đêm' : '⏰ OT (h)')}
                   </label>
-                  <div className={`h-[32px] px-2.5 rounded-md font-bold text-xs flex items-center justify-between border ${
-                    otAuto > 0
-                      ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
-                  }`}>
-                    <span>{otAuto.toFixed(1)}</span>
-                    {otAuto > 0 && (
-                      <span className="text-[9px] font-semibold px-1 py-0.2 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">
-                        {shift === 'night' ? 'Đêm' : 'OT'}
-                      </span>
-                    )}
-                  </div>
+                  {(() => {
+                    const rawOt = calcOtHours(toDecHours(sH, sMin, sAP), toDecHours(eH, eMin, eAP));
+                    const sunDisplay = hcAuto + rawOt;
+                    const valToDisplay = isCurrentDaySunday ? sunDisplay : otAuto;
+                    return (
+                      <div className={`h-[32px] px-2.5 rounded-md font-bold text-xs flex items-center justify-between border ${
+                        valToDisplay > 0
+                          ? (isCurrentDaySunday
+                              ? 'bg-red-50 dark:bg-red-950/30 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300'
+                              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300')
+                          : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
+                      }`}>
+                        <span>{valToDisplay.toFixed(1)}</span>
+                        {valToDisplay > 0 && (
+                          <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${
+                            isCurrentDaySunday
+                              ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100'
+                              : 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100'
+                          }`}>
+                            {isCurrentDaySunday ? 'CN 200%' : (shift === 'night' ? 'Đêm' : 'OT')}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 mb-0.5">Loại OT / Phụ cấp</label>
@@ -922,7 +1048,18 @@ export const AttendanceTab: React.FC = () => {
                     if (isNightRow && (displayOt === pc50 || (rec.checkIn && rec.checkOut))) {
                       displayOt = calcOtHours(pcStartDec, pcEndDec);
                     }
-                    const ot = displayOt + (rec.sundayHours || 0) + (rec.holidayHours || 0);
+
+                    const recParts = rec.date.split('-').map(Number);
+                    const isSundayRec = recParts.length === 3 && new Date(recParts[0], recParts[1] - 1, recParts[2]).getDay() === 0;
+
+                    let ot = displayOt + (rec.sundayHours || 0) + (rec.holidayHours || 0);
+                    if (isSundayRec) {
+                      const sunH = (rec.sundayHours || 0) > 0
+                        ? ((rec.sundayHours || 0) + (rec.hcHours || 0) + (rec.otHours || 0))
+                        : ((rec.hcHours || 0) + (rec.otHours || 0));
+                      ot = sunH > 0 ? sunH : calcHcHours(pcStartDec, pcEndDec) + calcOtHours(pcStartDec, pcEndDec);
+                    }
+
                     const badge = (text: string, cls: string) =>
                       <span className={`inline-flex px-2 py-0.5 rounded-full font-semibold text-[10px] ${cls}`}>{text}</span>;
                     // EPCC (date-first-no-stt) - tính isEditing sớm hơn (trước đây khai
@@ -952,10 +1089,11 @@ export const AttendanceTab: React.FC = () => {
                         <td className="py-2 px-3 font-bold text-slate-900 dark:text-slate-100">{emp?.fullName}</td>
                         <td className="py-2 px-3 font-bold text-slate-900 dark:text-slate-100">{emp?.position}</td>
                         {(() => {
-                          const statusBadge = rec.hcHours > 0 ? badge('Có mặt', 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300')
+                          const statusBadge = isSundayRec ? badge('Chủ nhật 200%', 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold')
+                            : rec.hcHours > 0 ? badge('Có mặt', 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300')
                             : rec.leavePaidDays > 0 ? badge('Nghỉ lương', 'bg-blue-100 text-blue-700')
                             : rec.leaveAnnualDays > 0 ? badge('Nghỉ phép', 'bg-sky-100 text-sky-700')
-                            : rec.sundayHours > 0 ? badge('Chủ nhật', 'bg-red-100 text-red-700')
+                            : rec.sundayHours > 0 ? badge('Chủ nhật 200%', 'bg-red-100 text-red-700 font-bold')
                             : badge('–', 'bg-slate-100 text-slate-500');
                           if (!isEditing) {
                             // Helpers để render ô có thể click-to-edit
@@ -1025,7 +1163,7 @@ export const AttendanceTab: React.FC = () => {
                                 </td>
                                 {/* HC (H) */}
                                 <td className="py-2 px-3 text-center font-bold text-blue-700 dark:text-blue-300">
-                                  <EditableCell field="hcHours" display={rec.hcHours?.toFixed(1) || '0.0'}>
+                                  <EditableCell field="hcHours" display={isSundayRec ? '0.0' : (rec.hcHours?.toFixed(1) || '0.0')}>
                                     <input
                                       type="number"
                                       autoFocus
@@ -1191,16 +1329,19 @@ export const AttendanceTab: React.FC = () => {
                   const rec = attendanceRecords[`${emp.id}_${selectedYear}_${selectedMonth}`];
                   let tHc = 0, tOt = 0, tNightOt = 0, tN = 0, tSun = 0, tHol = 0, tLp = 0, tLa = 0, tLu = 0;
                   if (rec?.dailyRecords) (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
-                    tHc += d.hcHours || 0;
-                    // EPCC (night-allowance-live-recompute-summary-table) - FIX theo yêu cầu
-                    // người dùng: đồng bộ với "Danh sách điểm danh gần đây" — cột "Đêm 30%"/
-                    // "Đêm 50%" ở bảng này KHÔNG còn đọc thẳng d.nightHours/d.otHours đã lưu
-                    // (có thể là dữ liệu cũ, tính theo công thức cũ) nữa, mà tính LẠI LIVE từ
-                    // checkIn/checkOut thực tế bằng calcNightAllowance30/50 (khung 22:00–05:00
-                    // / 05:00–06:00), giống hệt công thức dùng ở bảng "Danh sách điểm danh
-                    // gần đây" — đảm bảo 2 bảng luôn khớp số nhau.
+                    const parts = d.date?.split('-').map(Number);
+                    const isSunday = parts && parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+                    let dayHc = d.hcHours || 0;
                     let dayOt = d.otHours || 0;
-                    if ((d.nightHours || 0) > 0) {
+                    let daySun = d.sundayHours || 0;
+
+                    if (isSunday) {
+                      // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200% (CN 200%), KHÔNG tính HC công
+                      daySun = (daySun > 0 ? daySun : 0) + (dayHc > 0 ? dayHc : 0) + (dayOt > 0 ? dayOt : 0);
+                      dayHc = 0;
+                      dayOt = 0;
+                    } else if ((d.nightHours || 0) > 0) {
                       const dIn  = parseTime24(d.checkIn  || '20:00');
                       const dOut = parseTime24(d.checkOut || '05:00');
                       const dStartDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
@@ -1212,9 +1353,12 @@ export const AttendanceTab: React.FC = () => {
                         dayOt = calcOtHours(dStartDec, dEndDec);
                       }
                     }
+                    tHc += dayHc;
                     tOt += dayOt;
-                    tSun += d.sundayHours || 0; tHol += d.holidayHours || 0;
-                    tLp += d.leavePaidDays || 0; tLa += d.leaveAnnualDays || 0;
+                    tSun += daySun;
+                    tHol += d.holidayHours || 0;
+                    tLp += d.leavePaidDays || 0;
+                    tLa += d.leaveAnnualDays || 0;
                     // Nghỉ không lương: dùng để Bảng lương xét điều kiện phụ cấp chuyên cần
                     // (thường chỉ áp dụng khi không có ngày nghỉ không lương nào trong kỳ).
                     tLu += d.leaveUnpaidDays || 0;

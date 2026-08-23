@@ -102,22 +102,39 @@ export function calculatePayslip(
   if (attendanceRecord && attendanceRecord.dailyRecords) {
     let sumDailyFemale = 0;
     Object.values(attendanceRecord.dailyRecords).forEach((day) => {
-      hcTotalHours += day.hcHours || 0;
+      // EPCC (sunday-work-200-percent-no-hc-day) — FIX ROOT CAUSE: Đi làm vào ngày Chủ Nhật
+      // được tính TOÀN BỘ là 200% (CN 200%), KHÔNG tính ngày công HC như bình thường.
+      const parts = day.date?.split('-').map(Number);
+      const isSunday = parts && parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+
+      let dayHc = day.hcHours || 0;
       let dayOt = day.otHours || 0;
-      if ((day.nightHours || 0) > 0 && day.checkIn && day.checkOut) {
-        const [hhIn, mmIn] = day.checkIn.split(':').map(Number);
-        const [hhOut, mmOut] = day.checkOut.split(':').map(Number);
-        const sDec = (hhIn || 0) + (mmIn || 0) / 60;
-        const eDec = (hhOut || 0) + (mmOut || 0) / 60;
-        const eAdjusted = eDec <= sDec ? eDec + 24 : eDec;
-        const pc50 = Math.round(Math.max(0, Math.min(eAdjusted, 30) - Math.max(sDec, 29)) * 2) / 2;
-        if (dayOt === pc50 && eDec > 5.0 && eDec <= sDec) {
-          dayOt = Math.round((eDec - 5.0) * 2) / 2;
+      let daySunday = day.sundayHours || 0;
+
+      if (isSunday) {
+        // Chủ nhật: toàn bộ giờ làm thực tế (HC + OT + Sunday) đều hưởng 200%
+        const totalSundayWorkHours = (daySunday > 0 ? daySunday : 0) + (dayHc > 0 ? dayHc : 0) + (dayOt > 0 ? dayOt : 0);
+        daySunday = totalSundayWorkHours;
+        dayHc = 0;
+        dayOt = 0;
+      } else {
+        if ((day.nightHours || 0) > 0 && day.checkIn && day.checkOut) {
+          const [hhIn, mmIn] = day.checkIn.split(':').map(Number);
+          const [hhOut, mmOut] = day.checkOut.split(':').map(Number);
+          const sDec = (hhIn || 0) + (mmIn || 0) / 60;
+          const eDec = (hhOut || 0) + (mmOut || 0) / 60;
+          const eAdjusted = eDec <= sDec ? eDec + 24 : eDec;
+          const pc50 = Math.round(Math.max(0, Math.min(eAdjusted, 30) - Math.max(sDec, 29)) * 2) / 2;
+          if (dayOt === pc50 && eDec > 5.0 && eDec <= sDec) {
+            dayOt = Math.round((eDec - 5.0) * 2) / 2;
+          }
         }
       }
+
+      hcTotalHours += dayHc;
       ot150Hours += dayOt;
       nightShiftHours += day.nightHours || 0;
-      sunday200Hours += day.sundayHours || 0;
+      sunday200Hours += daySunday;
       holiday300Hours += day.holidayHours || 0;
       leavePaidDays += day.leavePaidDays || 0;
       leaveAnnualDays += day.leaveAnnualDays || 0;
