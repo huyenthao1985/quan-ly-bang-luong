@@ -102,7 +102,7 @@
   gap: 8px;
   font-weight: 700;
   color: var(--sidebar-text-active);
-  font-size: 15px;
+  font-size: 18.75px;
   white-space: nowrap;
   opacity: 1;
   transition: opacity 0.2s ease;

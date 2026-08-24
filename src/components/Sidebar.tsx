@@ -212,8 +212,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose, onOpen 
 
       <div className="sidebar-header">
         <div className="sidebar-logo" style={{ display: 'flex', flexDirection: 'row', alignItems: 'baseline', gap: '4px' }}>
-          <span style={{ fontWeight: 800, fontSize: '15px', color: '#ffffff', whiteSpace: 'nowrap' }}>PPC</span>
-          <span style={{ fontWeight: 800, fontSize: '15px', color: '#cfdc00', whiteSpace: 'nowrap' }}>TEAM</span>
+          <span style={{ fontWeight: 800, fontSize: '18.75px', color: '#ffffff', whiteSpace: 'nowrap' }}>PPC</span>
+          <span style={{ fontWeight: 800, fontSize: '18.75px', color: '#cfdc00', whiteSpace: 'nowrap' }}>TEAM</span>
         </div>
       </div>
 
