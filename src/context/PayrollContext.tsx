@@ -130,7 +130,9 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('payroll_employees');
     const raw: Employee[] = saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
-    const filtered = raw.filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531');
+    const filtered = raw
+      .filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531')
+      .map(e => (e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') ? { ...e, position: 'S. Manager' as Position } : e);
     return sortEmployeesByCode(filtered);
   });
 
@@ -224,15 +226,23 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
         if (remoteEmployees !== null) {
           if (remoteEmployees.length === 0) {
             // Supabase chưa có dữ liệu — migrate từ localStorage
-            const localData = employees.filter(e =>
-              e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531'
-            );
+            const localData = employees
+              .filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531')
+              .map(e => (e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') ? { ...e, position: 'S. Manager' as Position } : e);
             await upsertEmployees(localData);
             console.info('[Supabase] Đã migrate employees từ localStorage lên cloud.');
           } else {
-            setEmployees(sortEmployeesByCode(remoteEmployees.filter(e =>
-              e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531'
-            )));
+            const normalized = remoteEmployees
+              .filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531')
+              .map(e => {
+                if ((e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') && e.position !== 'S. Manager') {
+                  const fixed = { ...e, position: 'S. Manager' as Position };
+                  upsertEmployee(fixed);
+                  return fixed;
+                }
+                return e;
+              });
+            setEmployees(sortEmployeesByCode(normalized));
           }
         }
 
