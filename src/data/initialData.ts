@@ -171,16 +171,16 @@ export const INITIAL_SALARY_CONFIG: SalaryConfig = {
   positionAllowances: {
     'S. Manager': {
       position: 'S. Manager',
-      responsibilityAllowance: 0,
+      responsibilityAllowance: 3000000,
       cleanRoomAllowance: 0,
-      positionTitleAllowance: 0,
+      positionTitleAllowance: 600000,
       developmentAllowance: 0,
       seniorityAllowance: 0,
-      skillAllowance: 0,
-      languageSupport: 0,
-      diligenceBonus: 0,
-      transportSupport: 0,
-      housingSupport: 0,
+      skillAllowance: 500000,
+      languageSupport: 4800000,
+      diligenceBonus: 200000,
+      transportSupport: 200000,
+      housingSupport: 3300000,
     },
     'Manager': {
       position: 'Manager',

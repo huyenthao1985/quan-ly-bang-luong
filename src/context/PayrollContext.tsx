@@ -138,7 +138,24 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
 
   const [salaryConfig, setSalaryConfig] = useState<SalaryConfig>(() => {
     const saved = localStorage.getItem('payroll_config');
-    return saved ? JSON.parse(saved) : INITIAL_SALARY_CONFIG;
+    if (!saved) return INITIAL_SALARY_CONFIG;
+    try {
+      const parsed: SalaryConfig = JSON.parse(saved);
+      const mergedAllowances = { ...INITIAL_SALARY_CONFIG.positionAllowances, ...parsed.positionAllowances };
+      const sMan = mergedAllowances['S. Manager'];
+      const isSManAllZero = !sMan || (
+        (sMan.responsibilityAllowance || 0) === 0 &&
+        (sMan.positionTitleAllowance || 0) === 0 &&
+        (sMan.skillAllowance || 0) === 0 &&
+        (sMan.languageSupport || 0) === 0
+      );
+      if (isSManAllZero) {
+        mergedAllowances['S. Manager'] = { ...INITIAL_SALARY_CONFIG.positionAllowances['S. Manager'] };
+      }
+      return { ...INITIAL_SALARY_CONFIG, ...parsed, positionAllowances: mergedAllowances };
+    } catch {
+      return INITIAL_SALARY_CONFIG;
+    }
   });
 
   // EPCC (payroll-view-permission-matrix) — state ma trận phân quyền xem Bảng lương, theo
@@ -258,9 +275,24 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
           }
         }
 
-        // Salary config: nếu Supabase trống → migrate từ localStorage
+        // Salary config: nếu Supabase có dữ liệu → merge và setSalaryConfig
         if (remoteConfig !== null) {
-          setSalaryConfig(remoteConfig);
+          const mergedAllowances = { ...INITIAL_SALARY_CONFIG.positionAllowances, ...(remoteConfig.positionAllowances || {}) };
+          const sMan = mergedAllowances['S. Manager'];
+          const isSManAllZero = !sMan || (
+            (sMan.responsibilityAllowance || 0) === 0 &&
+            (sMan.positionTitleAllowance || 0) === 0 &&
+            (sMan.skillAllowance || 0) === 0 &&
+            (sMan.languageSupport || 0) === 0
+          );
+          if (isSManAllZero) {
+            mergedAllowances['S. Manager'] = { ...INITIAL_SALARY_CONFIG.positionAllowances['S. Manager'] };
+          }
+          const finalConfig = { ...INITIAL_SALARY_CONFIG, ...remoteConfig, positionAllowances: mergedAllowances };
+          setSalaryConfig(finalConfig);
+          if (isSManAllZero) {
+            await upsertSalaryConfig(finalConfig);
+          }
         } else {
           await upsertSalaryConfig(salaryConfig);
           console.info('[Supabase] Đã migrate salaryConfig từ localStorage lên cloud.');

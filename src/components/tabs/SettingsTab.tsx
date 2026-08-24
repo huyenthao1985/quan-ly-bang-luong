@@ -38,6 +38,17 @@ export const SettingsTab: React.FC = () => {
 
   // EPCC (account-scope-filter) — Lọc vị trí và nhân viên cho phép:
   const isSuperAdmin = authRole === 'admin';
+  const canEdit = isSuperAdmin || authRole === 'editor' || activeRole !== 'User';
+
+  // Tự động đồng bộ state khi context tải xong từ Supabase/localStorage
+  useEffect(() => {
+    setConfig({ ...salaryConfig });
+  }, [salaryConfig]);
+
+  useEffect(() => {
+    setPermMatrix(payrollViewPermissions);
+  }, [payrollViewPermissions]);
+
   const em = (authProfile?.email || '').toLowerCase();
   const un = (authProfile?.username || '').toLowerCase();
   const isVP = em.includes('vp') || un === 'vp';
@@ -177,10 +188,9 @@ export const SettingsTab: React.FC = () => {
   const fmtNum = (n: number) => (n || 0).toLocaleString('en-US');
   const parseNum = (s: string) => Number(s.replace(/[^0-9]/g, '')) || 0;
 
-  // EPCC (payroll-view-permission-matrix) — chỉ Admin được tick, theo đúng pattern
-  // `activeRole === 'User'` chặn quyền đã dùng cho các control khác trong file này.
+  // EPCC (payroll-view-permission-matrix) — chỉ Admin được tick
   const togglePermission = (viewerPos: Position, targetPos: Position) => {
-    if (activeRole !== 'Admin') {
+    if (!isSuperAdmin && activeRole !== 'Admin') {
       showToast('Chỉ Admin mới có quyền phân quyền xem Bảng lương!', 'error');
       return;
     }
@@ -196,8 +206,8 @@ export const SettingsTab: React.FC = () => {
   // EPCC (single-save-button) — Lưu tất cả cấu hình & các khoản nhập tay theo nhân viên
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeRole === 'User') {
-      showToast('Chỉ Admin hoặc Leader mới có quyền cập nhật cấu hình!', 'error');
+    if (!canEdit) {
+      showToast('Chỉ Quản trị viên hoặc Leader mới có quyền cập nhật cấu hình!', 'error');
       return;
     }
     updateSalaryConfig(config);
@@ -261,15 +271,15 @@ export const SettingsTab: React.FC = () => {
     });
   };
 
-  // Lưu ngay khi rời ô (blur) hoặc nhấn Enter
+  // Lưu ngay khi rời ô (blur) hoặc nhấn Enter hoặc bấm nút Lưu
   const commitAllowance = () => {
-    if (activeRole === 'User') return;
+    if (!canEdit) return;
     updateSalaryConfig(configRef.current);
-    showToast('Đã tự động lưu cấu hình phụ cấp!');
+    showToast('Đã lưu cấu hình phụ cấp theo vị trí!');
   };
 
   const handleClearAllowances = () => {
-    if (activeRole === 'User') return;
+    if (!canEdit) return;
     const emptyAllowances: Record<Position, PositionAllowanceConfig> = {
       'S. Manager': { position: 'S. Manager', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
       'Manager': { position: 'Manager', responsibilityAllowance: 0, cleanRoomAllowance: 0, positionTitleAllowance: 0, developmentAllowance: 0, seniorityAllowance: 0, skillAllowance: 0, languageSupport: 0, diligenceBonus: 0, transportSupport: 0, housingSupport: 0 },
@@ -302,7 +312,7 @@ export const SettingsTab: React.FC = () => {
               Cấu Hình Tham Số Tính Lương, Phụ Cấp & Khấu Trừ
             </h2>
 
-          {activeRole !== 'User' && (
+          {canEdit && (
             <button
               type="submit"
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg shadow-sm transition-all cursor-pointer"
@@ -673,20 +683,30 @@ export const SettingsTab: React.FC = () => {
               ? <>Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh — Đang xem: {selectedEmpPosition}</>
               : <>Cấu Hình Phụ Cấp Theo Vị Trí / Chức Danh (S. Manager, Manager, Senior Staff, Leader, Staff, OP)</>}
           </h3>
-          {activeRole !== 'User' && (
-            <button
-              type="button"
-              onClick={handleClearAllowances}
-              className="shrink-0 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 rounded hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-            >
-              Xóa toàn bộ phụ cấp (Về 0)
-            </button>
+          {canEdit && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={commitAllowance}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Lưu cấu hình phụ cấp</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleClearAllowances}
+                className="shrink-0 px-2.5 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+              >
+                Xóa toàn bộ phụ cấp (Về 0)
+              </button>
+            </div>
           )}
         </div>
 
         {/* EPCC (allowance-table-view-permission) — nhắc rõ vì sao bảng bị thu hẹp, tránh
             hiểu lầm là bug mất dữ liệu khi Leader/User chỉ thấy 1-2 dòng thay vì đủ 6. */}
-        {activeRole !== 'Admin' && (
+        {!isSuperAdmin && activeRole !== 'Admin' && (
           <div className="mb-3 text-xs rounded-lg p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
             {viewerPosition
               ? <>Chỉ hiện phụ cấp của các vị trí bạn được phân quyền xem (vị trí của bạn: <strong>{viewerPosition}</strong>). Admin có thể mở rộng quyền này ở mục "Phân quyền xem Bảng lương theo vị trí" bên dưới.</>
