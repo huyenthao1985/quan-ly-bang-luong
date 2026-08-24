@@ -614,13 +614,19 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
 
   const updateSalaryConfig = (newConfig: SalaryConfig) => {
     setSalaryConfig(newConfig);
-    showToast('Đã lưu cấu hình phụ cấp và các tham số tính lương!');
+    localStorage.setItem('payroll_config', JSON.stringify(newConfig));
+    if (isDbLoaded && isSupabaseEnabled) {
+      upsertSalaryConfig(newConfig);
+    }
   };
 
   // EPCC (payroll-view-permission-matrix) — lưu ma trận phân quyền xem Bảng lương theo vị trí
   const updatePayrollViewPermissions = (next: PayrollViewPermissions) => {
     setPayrollViewPermissions(next);
-    showToast('Đã lưu phân quyền xem Bảng lương theo vị trí!');
+    localStorage.setItem('payroll_view_permissions', JSON.stringify(next));
+    if (isDbLoaded && isSupabaseEnabled) {
+      upsertPayrollViewPermissions(next);
+    }
   };
 
   // EPCC (sync-selected-employee-across-tabs) — khởi tạo selectedEmployeeId khi employees load xong

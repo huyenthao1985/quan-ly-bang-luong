@@ -228,7 +228,7 @@ export const SettingsTab: React.FC = () => {
         dependentsCount: manualDependents,
       });
     }
-    showToast('Đã lưu tất cả cấu hình & số người phụ thuộc!');
+    showToast('Đã lưu thành công tất cả cấu hình & số người phụ thuộc!', 'success');
   };
 
   // Ref luôn giữ config mới nhất để commitAllowance không bị stale closure
@@ -275,7 +275,7 @@ export const SettingsTab: React.FC = () => {
   const commitAllowance = () => {
     if (!canEdit) return;
     updateSalaryConfig(configRef.current);
-    showToast('Đã lưu cấu hình phụ cấp theo vị trí!');
+    showToast('Đã lưu thành công cấu hình phụ cấp theo vị trí!', 'success');
   };
 
   const handleClearAllowances = () => {
@@ -688,17 +688,10 @@ export const SettingsTab: React.FC = () => {
               <button
                 type="button"
                 onClick={commitAllowance}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all cursor-pointer"
+                className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu cấu hình phụ cấp</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleClearAllowances}
-                className="shrink-0 px-2.5 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-              >
-                Xóa toàn bộ phụ cấp (Về 0)
               </button>
             </div>
           )}
