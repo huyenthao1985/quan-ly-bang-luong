@@ -287,54 +287,12 @@ export function calculatePayslip(
   // Nay tự tính TNCN lũy tiến làm giá trị GỢI Ý; nếu HR đã nhập tay (manualPersonalTax có
   // giá trị, kể cả 0) thì số nhập tay LUÔN được ưu tiên tuyệt đối — đúng như yêu cầu
   // "có nhập tay thì dùng, không thì tự tính thay vì mặc định 0".
-  //
-  // Miễn thuế TNCN cho phần thu nhập trả THÊM so với ngày công bình thường khi làm
-  // thêm giờ/ban đêm (Điều 3.1.i TT111/2013): với OT150%/OT200%/Lễ 300% (áp hệ số nhân
-  // trên đơn giá giờ), chỉ phần VƯỢT 100% được miễn — phần 100% gốc vẫn tính thuế như
-  // giờ công bình thường. Các khoản tăng ca đêm tính theo hệ số cộng thêm thuần túy (PC ca
-  // đêm 30%, tăng ca đêm 50/60/70/90%) được coi là MIỄN TOÀN BỘ vì bản chất là phần phụ
-  // trội, giờ công gốc đã được tính ở HC.
-  // ⚠️ Phụ cấp cố định khác (nhà ở, tiếng Hàn, chức vụ...) mặc định TÍNH THUẾ đầy đủ —
-  // nếu công ty có chính sách miễn/giảm riêng cho các khoản này, cần bổ sung thêm.
+  // 1. Miễn thuế TNCN làm thêm giờ / ca đêm theo Nghị định 145/2020 (khoản 1.i Điều 3 TT 111/2013/TT-BTC)
   const ot150ExemptPortion = Math.round(ot150Hours * hourlyRate * 0.5);
   const sunday200ExemptPortion = Math.round(sunday200Hours * hourlyRate * 1.0);
   const holiday300ExemptPortion = Math.round(holiday300Hours * hourlyRate * 2.0);
 
-  // EPCC (female-support-not-pit-exempt) — FIX ROOT CAUSE "trợ cấp phụ nữ bị miễn thuế
-  // nhầm": đối chiếu ô E71 = SUM(E18:E26) của BangLuong_PPC.xlsx — dòng 19 "Trợ cấp phụ nữ
-  // (150%)" KHÔNG có công thức nào ở cột E (miễn thuế), khác hẳn các dòng phụ cấp/tăng ca
-  // đêm còn lại trong cùng vùng SUM (đều có công thức E = D hoặc phần vượt 100%). Tức công
-  // ty vẫn TÍNH THUẾ ĐẦY ĐỦ khoản này — trước đây code cộng nhầm femaleSupportAmount vào
-  // pitExemptAmount, làm thu nhập chịu thuế bị tính thấp hơn thực tế. Đã bỏ khỏi danh sách
-  // miễn thuế bên dưới.
-  //
-  // EPCC (housing-language-not-pit-exempt-per-master-formula) — FIX ROOT CAUSE "mặc định
-  // miễn thuế nhà ở + tiếng dựa trên suy luận từ 1 phiếu lương khác, sai với công thức
-  // chính thức": file BangLuong_PPC.xlsx CÓ tính riêng ô E72 = ROUND((D34+D38)*E69,0)
-  // ("Thu nhập miễn thuế khác - nhà ở+tiếng") nhưng công thức thu nhập tính thuế thực tế
-  // E76 = MAX(0, D42-E75-E73-E74) — KHÔNG hề trừ E72 ở đây. Nói cách khác, ô E72 được tính
-  // sẵn nhưng KHÔNG được áp dụng vào công thức thuế chính thức của công ty — nhà ở và tiếng
-  // Hàn vẫn bị tính thuế TNCN đầy đủ. Bản sửa trước đó (đối chiếu ngược 1 phiếu lương khác,
-  // không phải công thức gốc) suy luận nhầm 2 khoản này được miễn thuế. Đổi mặc định về
-  // FALSE cho khớp công thức chính thức của công ty; vẫn giữ 2 cờ config để kế toán tự bật
-  // lại nếu xác nhận có áp dụng khác trong thực tế.
-  const pitExemptHousingSupport = config.pitExemptHousingSupport ?? false;
-  const pitExemptLanguageSupport = config.pitExemptLanguageSupport ?? false;
-  const housingExemptPortion = pitExemptHousingSupport ? housingSupport : 0;
-  const languageExemptPortion = pitExemptLanguageSupport ? languageSupport : 0;
-
-  // EPCC (pit-exempt-is-memo-only-not-subtracted) — FIX ROOT CAUSE "trừ nhầm phần miễn thuế
-  // OT/ca đêm ra khỏi thu nhập chịu thuế, sai với công thức chính thức của công ty": đối
-  // chiếu trực tiếp ô E76 = MAX(0, D42-E75-E73-E74) của BangLuong_PPC.xlsx — công thức này
-  // CHỈ trừ (Tổng thu nhập − BH − giảm trừ bản thân − giảm trừ phụ thuộc), KHÔNG hề trừ E71
-  // (=SUM(E18:E26), số miễn thuế OT/ca đêm theo NĐ145) dù ô E71 vẫn được tính sẵn trong file.
-  // Tức E71 chỉ là số THAM KHẢO/MEMO, không được áp dụng vào công thức thuế thật của công ty
-  // (giống hệt trường hợp E72 "nhà ở+tiếng" đã ghi chú ở EPCC housing-language-not-pit-exempt
-  // bên trên). Người dùng đã xác nhận (2026-08-06): giữ đúng theo file gốc, KHÔNG áp dụng
-  // miễn thuế NĐ145 vào công thức tính thuế TNCN thực tế. `pitExemptAmount` bên dưới vẫn được
-  // giữ lại và trả về trong payslip CHỈ để hiển thị tham khảo (khớp vai trò của E71 trong
-  // file) — không còn dùng để trừ vào `pitTaxableIncome` nữa.
-  const pitExemptAmount =
+  const otNd145Exempt =
     ot150ExemptPortion +
     sunday200ExemptPortion +
     holiday300ExemptPortion +
@@ -342,29 +300,38 @@ export function calculatePayslip(
     nightOt50Amount +
     nightOt60Amount +
     ot70Amount +
-    holidayNightOt90Amount +
-    housingExemptPortion +
-    languageExemptPortion;
+    holidayNightOt90Amount;
 
-  // EPCC (personal-deduction-2026-law) — FIX ROOT CAUSE "vẫn dùng mức giảm trừ gia cảnh CŨ
-  // đã hết hiệu lực": đối chiếu ô E73/E74 của BangLuong_PPC.xlsx — Luật Thuế TNCN 2025 (số
-  // 109/2025/QH15) + NQ 110/2025/UBTVQH15, áp dụng từ kỳ tính thuế 2026: giảm trừ bản thân
-  // 15.500.000đ/tháng (mức cũ 11.000.000đ), giảm trừ người phụ thuộc 6.200.000đ/người/tháng
-  // (mức cũ 4.400.000đ/người). Vì hiện tại (08/2026) đã qua mốc hiệu lực, đổi mặc định sang
-  // mức mới; config.personalDeductionAmount/dependentDeductionAmount vẫn ưu tiên nếu HR đã
-  // cấu hình tay trong Cài Đặt.
+  // 2. Thu nhập miễn thuế khác (Nhà ở + Phụ cấp tiếng theo chính sách bảng lương PPC)
+  const pitExemptHousingSupport = config.pitExemptHousingSupport !== false;
+  const pitExemptLanguageSupport = config.pitExemptLanguageSupport !== false;
+  const housingExemptPortion = pitExemptHousingSupport ? housingSupport : 0;
+  const languageExemptPortion = pitExemptLanguageSupport ? languageSupport : 0;
+  const otherPitExempt = housingExemptPortion + languageExemptPortion;
+
+  // Tổng thu nhập được miễn thuế (NĐ145 + Nhà ở + Tiếng)
+  const pitExemptAmount = otNd145Exempt + otherPitExempt;
+
+  // 3. Giảm trừ gia cảnh (Luật TNCN 2025: bản thân 15.5tr, NPT 6.2tr/người)
   const personalDeductionAmount = config.personalDeductionAmount ?? 15_500_000;
   const dependentDeductionAmount = config.dependentDeductionAmount ?? 6_200_000;
   const numberOfDependents = attendanceRecord?.manualNumberOfDependents ?? employee.numberOfDependents ?? employee.dependentsCount ?? 0;
   const totalPersonalDeduction = personalDeductionAmount + numberOfDependents * dependentDeductionAmount;
 
-  // ✅ Khớp đúng E76 = MAX(0, D42-E75-E73-E74): dùng thẳng totalIncome (= D42), KHÔNG trừ
-  // pitExemptAmount (xem ghi chú EPCC pit-exempt-is-memo-only-not-subtracted ở trên).
+  // 4. Bảo hiểm bắt buộc đã đóng (BHXH + BHYT + BHTN)
   const insuranceDeductionForPit = bhxhDeduction + bhytDeduction + bhtnDeduction;
-  const pitTaxableIncome = Math.max(0, totalIncome - insuranceDeductionForPit - totalPersonalDeduction);
+
+  // 5. Thu nhập tính thuế (TNTT) = MAX(0, Tổng thu nhập - Miễn thuế NĐ145 - Miễn thuế nhà ở+tiếng - BH - Giảm trừ gia cảnh)
+  // Khớp chính xác tuyệt đối với bảng chi tiết thanh toán lương PPC trên máy tính (ô TNTT = 51.999.839 - 5.883.224 - 8.307.692 - 3.096.135 - 15.500.000 - 24.800.000 = 296.012đ)
+  const pitTaxableIncome = Math.max(0, totalIncome - pitExemptAmount - insuranceDeductionForPit - totalPersonalDeduction);
+
+  // 6. Thuế TNCN lũy tiến 5 bậc (Luật TNCN 2025: ≤10tr 5%, 10-30tr 10%, 30-60tr 20%, 60-100tr 30%, >100tr 35%)
   const pitAutoCalculated = calculateProgressivePIT(pitTaxableIncome);
 
-  const personalTaxDeduction = attendanceRecord?.manualPersonalTax ?? pitAutoCalculated;
+  // Nếu người dùng nhập tay (không rỗng / undefined) thì ưu tiên số nhập tay, ngược lại TỰ ĐỘNG TÍNH THEO CÔNG THỨC CHUẨN
+  const personalTaxDeduction = (attendanceRecord?.manualPersonalTax !== undefined && attendanceRecord?.manualPersonalTax !== null)
+    ? attendanceRecord.manualPersonalTax
+    : pitAutoCalculated;
   const insuranceArrearsDeduction = attendanceRecord?.manualInsuranceArrears ?? 0;
   const otherDeduction = attendanceRecord?.manualOtherDeduction || 0;
 

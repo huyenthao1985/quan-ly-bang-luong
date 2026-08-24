@@ -605,7 +605,7 @@ export const SettingsTab: React.FC = () => {
                   <input
                     id="pitExemptHousing"
                     type="checkbox"
-                    checked={config.pitExemptHousingSupport ?? false}
+                    checked={config.pitExemptHousingSupport !== false}
                     onChange={(e) => setConfig({ ...config, pitExemptHousingSupport: e.target.checked })}
                     className="w-3.5 h-3.5 accent-blue-600"
                   />
@@ -615,7 +615,7 @@ export const SettingsTab: React.FC = () => {
                   <input
                     id="pitExemptLanguage"
                     type="checkbox"
-                    checked={config.pitExemptLanguageSupport ?? false}
+                    checked={config.pitExemptLanguageSupport !== false}
                     onChange={(e) => setConfig({ ...config, pitExemptLanguageSupport: e.target.checked })}
                     className="w-3.5 h-3.5 accent-blue-600"
                   />

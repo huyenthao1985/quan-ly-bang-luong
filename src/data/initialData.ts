@@ -168,6 +168,11 @@ export const INITIAL_SALARY_CONFIG: SalaryConfig = {
   bhtnRate: 0.01, // 1%
   unionFeeFlat: 31500, // 31.500 đ
 
+  personalDeductionAmount: 15_500_000,
+  dependentDeductionAmount: 6_200_000,
+  pitExemptHousingSupport: true,
+  pitExemptLanguageSupport: true,
+
   positionAllowances: {
     'S. Manager': {
       position: 'S. Manager',
