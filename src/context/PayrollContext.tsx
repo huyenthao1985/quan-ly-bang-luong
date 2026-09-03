@@ -66,6 +66,9 @@ interface PayrollContextType {
   theme: 'light' | 'dark';
   selectedMonth: number;
   selectedYear: number;
+  currentRealMonth: number;
+  currentRealYear: number;
+  resetToCurrentPeriod: () => void;
   activeTab: string;
   toasts: ToastMessage[];
   isDbLoading: boolean; // true khi đang fetch data từ Supabase lần đầu
@@ -208,8 +211,17 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
     return (saved as 'light' | 'dark') || 'light';
   });
 
-  const [selectedMonth, setSelectedMonth] = useState<number>(8);
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
+  const [selectedMonth, setSelectedMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const currentRealMonth = new Date().getMonth() + 1;
+  const currentRealYear = new Date().getFullYear();
+
+  const resetToCurrentPeriod = () => {
+    const d = new Date();
+    setSelectedMonth(d.getMonth() + 1);
+    setSelectedYear(d.getFullYear());
+  };
+
   const [activeTab, setActiveTab] = useState<string>('employees');
   // EPCC (sync-selected-employee-across-tabs) — khởi tạo từ nhân viên đầu tiên trong danh sách
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
@@ -660,6 +672,9 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
         theme,
         selectedMonth,
         selectedYear,
+        currentRealMonth,
+        currentRealYear,
+        resetToCurrentPeriod,
         activeTab,
         toasts,
         isDbLoading,

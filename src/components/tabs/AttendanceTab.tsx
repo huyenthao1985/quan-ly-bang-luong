@@ -300,6 +300,7 @@ export const AttendanceTab: React.FC = () => {
     employees, attendanceRecords,
     selectedMonth, selectedYear,
     setSelectedMonth, setSelectedYear,
+    currentRealMonth, currentRealYear, resetToCurrentPeriod,
     updateAttendanceDay, deleteAttendanceDay, showToast,
     setLastCheckedInEmployeeId,
   } = usePayroll();
@@ -813,6 +814,23 @@ export const AttendanceTab: React.FC = () => {
               className="bg-transparent border-none text-[0.9rem] font-bold text-slate-800 dark:text-slate-200 cursor-pointer outline-none">
               {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
+
+            {/* Realtime indicator & Reset button */}
+            {selectedMonth === currentRealMonth && selectedYear === currentRealYear ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Thời gian thực
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={resetToCurrentPeriod}
+                title="Bấm để đưa về kỳ tháng hiện tại theo lịch thực"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 transition-colors cursor-pointer"
+              >
+                Về tháng hiện tại (T{currentRealMonth}/{currentRealYear})
+              </button>
+            )}
           </div>
 
           {/* View toggle */}

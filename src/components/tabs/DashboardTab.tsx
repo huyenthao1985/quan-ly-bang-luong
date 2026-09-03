@@ -28,7 +28,18 @@ import { usePayroll } from '../../context/PayrollContext';
 import { calculatePayslip, formatVND } from '../../utils/payrollCalculations';
 
 export const DashboardTab: React.FC = () => {
-  const { employees, attendanceRecords, salaryConfig, selectedMonth, selectedYear, setSelectedMonth, setSelectedYear } = usePayroll();
+  const {
+    employees,
+    attendanceRecords,
+    salaryConfig,
+    selectedMonth,
+    selectedYear,
+    setSelectedMonth,
+    setSelectedYear,
+    currentRealMonth,
+    currentRealYear,
+    resetToCurrentPeriod,
+  } = usePayroll();
 
   // Compute metrics for selected month/year
   const totalEmployees = employees.length;
@@ -121,12 +132,27 @@ export const DashboardTab: React.FC = () => {
               onChange={(e) => setSelectedYear(Number(e.target.value))}
               className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-xs font-medium text-slate-800 dark:text-slate-200 cursor-pointer"
             >
-              {[2025, 2026, 2027].map((y) => (
+              {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
                 <option key={y} value={y}>
                   {y}
                 </option>
               ))}
             </select>
+            {selectedMonth === currentRealMonth && selectedYear === currentRealYear ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Lịch hiện tại
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={resetToCurrentPeriod}
+                title="Bấm để quay về kỳ lương tháng hiện tại theo lịch thực"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 cursor-pointer"
+              >
+                Về T{currentRealMonth}/{currentRealYear}
+              </button>
+            )}
           </div>
         </div>
       </div>

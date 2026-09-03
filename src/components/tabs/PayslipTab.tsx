@@ -14,6 +14,9 @@ export const PayslipTab: React.FC = () => {
     selectedYear,
     setSelectedMonth,
     setSelectedYear,
+    currentRealMonth,
+    currentRealYear,
+    resetToCurrentPeriod,
     updateEmployee,
     showToast,
     activeRole,
@@ -183,12 +186,31 @@ export const PayslipTab: React.FC = () => {
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1 text-xs font-bold text-slate-800 dark:text-slate-200 cursor-pointer"
           >
-            {[2025, 2026, 2027].map((y) => (
+            {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Realtime Status / Reset button */}
+        <div className="flex items-center">
+          {selectedMonth === currentRealMonth && selectedYear === currentRealYear ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Lịch hiện tại
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={resetToCurrentPeriod}
+              title="Bấm để quay về kỳ lương tháng hiện tại theo lịch thực"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700 transition-colors cursor-pointer"
+            >
+              Về tháng hiện tại (T{currentRealMonth}/{currentRealYear})
+            </button>
+          )}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
