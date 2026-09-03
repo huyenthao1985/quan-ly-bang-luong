@@ -1,29 +1,27 @@
 import { CalculatedPayslip, Employee, EmployeeAttendanceRecord, SalaryConfig } from '../types/payroll';
 
-// EPCC (pit-5-bracket-2026-law) — FIX ROOT CAUSE "vẫn dùng biểu thuế TNCN 7 bậc CŨ đã hết
-// hiệu lực": đối chiếu file gốc BangLuong_PPC.xlsx (ô A77/A78, công ty PPC) — kể từ kỳ
-// tính thuế THÁNG 07/2026 trở đi, Luật Thuế TNCN 2025 (số 109/2025/QH15, hiệu lực từ
-// 01/7/2026) áp dụng biểu thuế lũy tiến MỚI chỉ còn 5 bậc (thay biểu 7 bậc cũ):
-//   ≤10tr: 5% · 10-30tr: 10% (trừ nhanh 500.000) · 30-60tr: 20% (trừ nhanh 3.500.000) ·
-//   60-100tr: 30% (trừ nhanh 9.500.000) · >100tr: 35% (trừ nhanh 14.500.000)
-// Bảng dưới đây dùng phương pháp cộng dồn theo từng bậc (tương đương về số học với công
-// thức "trừ nhanh" trong Excel — đã kiểm chứng chéo tại TNTT=50.000.000đ: cả 2 cách đều
-// ra 6.500.000đ thuế). Vì ngày hiện tại (tháng 08/2026) đã sau mốc 01/7/2026, TOÀN BỘ kỳ
-// lương từ giờ trở đi phải dùng biểu 5 bậc này — không còn trường hợp nào cần biểu 7 bậc cũ.
+// Biểu thuế TNCN lũy tiến từng phần 7 bậc theo Luật Thuế TNCN hiện hành (Điều 22 Luật Thuế TNCN):
+// - Bậc 1: ≤ 5 triệu đồng/tháng: 5% (trừ nhanh: 0)
+// - Bậc 2: > 5 - 10 triệu đồng/tháng: 10% (trừ nhanh: 0.25 triệu)
+// - Bậc 3: > 10 - 18 triệu đồng/tháng: 15% (trừ nhanh: 0.75 triệu)
+// - Bậc 4: > 18 - 32 triệu đồng/tháng: 20% (trừ nhanh: 1.65 triệu)
+// - Bậc 5: > 32 - 52 triệu đồng/tháng: 25% (trừ nhanh: 3.25 triệu)
+// - Bậc 6: > 52 - 80 triệu đồng/tháng: 30% (trừ nhanh: 5.85 triệu)
+// - Bậc 7: > 80 triệu đồng/tháng: 35% (trừ nhanh: 9.85 triệu)
 const PIT_BRACKETS: { upTo: number; rate: number }[] = [
-  { upTo: 10_000_000, rate: 0.05 },
-  { upTo: 30_000_000, rate: 0.10 },
-  { upTo: 60_000_000, rate: 0.20 },
-  { upTo: 100_000_000, rate: 0.30 },
+  { upTo: 5_000_000, rate: 0.05 },
+  { upTo: 10_000_000, rate: 0.10 },
+  { upTo: 18_000_000, rate: 0.15 },
+  { upTo: 32_000_000, rate: 0.20 },
+  { upTo: 52_000_000, rate: 0.25 },
+  { upTo: 80_000_000, rate: 0.30 },
   { upTo: Infinity, rate: 0.35 },
 ];
 
 /**
- * Tính thuế TNCN lũy tiến từng phần (biểu 5 bậc, Luật TNCN 2025, hiệu lực từ kỳ lương
- * 01/7/2026) trên thu nhập tính thuế (đã trừ BHXH/BHYT/BHTN, giảm trừ bản thân, giảm trừ
- * người phụ thuộc và phần miễn thuế OT/ca đêm).
- * Đây là giá trị GỢI Ý TỰ ĐỘNG — ô "Thuế TNCN" nhập tay trên PayslipTab vẫn luôn được
- * ưu tiên tuyệt đối nếu HR đã nhập (xem cách dùng ở personalTaxDeduction bên dưới).
+ * Tính thuế TNCN lũy tiến từng phần theo biểu thuế hiện hành trên thu nhập tính thuế
+ * (đã trừ BHXH/BHYT/BHTN, giảm trừ bản thân 11tr, giảm trừ NPT 4.4tr/người và phần miễn thuế OT/ca đêm).
+ * Tự động tính toán và khấu trừ vào Bảng lương; nếu HR nhập tay thì ưu tiên số nhập tay.
  */
 export function calculateProgressivePIT(taxableIncome: number): number {
   if (taxableIncome <= 0) return 0;
@@ -302,9 +300,9 @@ export function calculatePayslip(
     ot70Amount +
     holidayNightOt90Amount;
 
-  // 2. Thu nhập miễn thuế khác (Nhà ở + Phụ cấp tiếng theo chính sách bảng lương PPC)
-  const pitExemptHousingSupport = config.pitExemptHousingSupport !== false;
-  const pitExemptLanguageSupport = config.pitExemptLanguageSupport !== false;
+  // 2. Thu nhập miễn thuế khác (Nhà ở + Phụ cấp tiếng nếu được tích chọn trong Cài đặt)
+  const pitExemptHousingSupport = config.pitExemptHousingSupport === true;
+  const pitExemptLanguageSupport = config.pitExemptLanguageSupport === true;
   const housingExemptPortion = pitExemptHousingSupport ? housingSupport : 0;
   const languageExemptPortion = pitExemptLanguageSupport ? languageSupport : 0;
   const otherPitExempt = housingExemptPortion + languageExemptPortion;
@@ -312,20 +310,19 @@ export function calculatePayslip(
   // Tổng thu nhập được miễn thuế (NĐ145 + Nhà ở + Tiếng)
   const pitExemptAmount = otNd145Exempt + otherPitExempt;
 
-  // 3. Giảm trừ gia cảnh (Luật TNCN 2025: bản thân 15.5tr, NPT 6.2tr/người)
-  const personalDeductionAmount = config.personalDeductionAmount ?? 15_500_000;
-  const dependentDeductionAmount = config.dependentDeductionAmount ?? 6_200_000;
+  // 3. Giảm trừ gia cảnh (Mặc định: bản thân 11tr, NPT 4.4tr/người)
+  const personalDeductionAmount = config.personalDeductionAmount ?? 11_000_000;
+  const dependentDeductionAmount = config.dependentDeductionAmount ?? 4_400_000;
   const numberOfDependents = attendanceRecord?.manualNumberOfDependents ?? employee.numberOfDependents ?? employee.dependentsCount ?? 0;
   const totalPersonalDeduction = personalDeductionAmount + numberOfDependents * dependentDeductionAmount;
 
   // 4. Bảo hiểm bắt buộc đã đóng (BHXH + BHYT + BHTN)
   const insuranceDeductionForPit = bhxhDeduction + bhytDeduction + bhtnDeduction;
 
-  // 5. Thu nhập tính thuế (TNTT) = MAX(0, Tổng thu nhập - Miễn thuế NĐ145 - Miễn thuế nhà ở+tiếng - BH - Giảm trừ gia cảnh)
-  // Khớp chính xác tuyệt đối với bảng chi tiết thanh toán lương PPC trên máy tính (ô TNTT = 51.999.839 - 5.883.224 - 8.307.692 - 3.096.135 - 15.500.000 - 24.800.000 = 296.012đ)
+  // 5. Thu nhập tính thuế (TNTT) = MAX(0, Tổng thu nhập - Miễn thuế NĐ145 - Miễn thuế khác - BH - Giảm trừ gia cảnh)
   const pitTaxableIncome = Math.max(0, totalIncome - pitExemptAmount - insuranceDeductionForPit - totalPersonalDeduction);
 
-  // 6. Thuế TNCN lũy tiến 5 bậc (Luật TNCN 2025: ≤10tr 5%, 10-30tr 10%, 30-60tr 20%, 60-100tr 30%, >100tr 35%)
+  // 6. Thuế TNCN lũy tiến từng phần tự động tính theo biểu thuế 7 bậc
   const pitAutoCalculated = calculateProgressivePIT(pitTaxableIncome);
 
   // Nếu người dùng nhập tay (không rỗng / undefined) thì ưu tiên số nhập tay, ngược lại TỰ ĐỘNG TÍNH THEO CÔNG THỨC CHUẨN

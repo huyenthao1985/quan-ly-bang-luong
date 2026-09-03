@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 interface Props {
   value: number;
@@ -15,17 +15,32 @@ function fmt(n: number): string {
 
 export const FormattedNumberInput: React.FC<Props> = ({ value, onChange, className = "", placeholder, id }) => {
   const [display, setDisplay] = useState(() => fmt(value));
+  const isFocused = useRef(false);
 
-  useEffect(() => { setDisplay(fmt(value)); }, [value]);
+  useEffect(() => {
+    if (!isFocused.current) {
+      setDisplay(fmt(value));
+    }
+  }, [value]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, "");
     const num = raw === "" ? 0 : Number(raw);
-    setDisplay(raw === "" ? "" : num.toLocaleString("en-US"));
+    setDisplay(raw === "" ? "" : Number(raw).toLocaleString("en-US"));
     onChange(num);
   };
 
-  const handleBlur = () => { setDisplay(fmt(value)); };
+  const handleFocus = () => {
+    isFocused.current = true;
+    if (value === 0) {
+      setDisplay("");
+    }
+  };
+
+  const handleBlur = () => {
+    isFocused.current = false;
+    setDisplay(fmt(value));
+  };
 
   return (
     <input
@@ -34,9 +49,11 @@ export const FormattedNumberInput: React.FC<Props> = ({ value, onChange, classNa
       inputMode="numeric"
       value={display}
       onChange={handleChange}
+      onFocus={handleFocus}
       onBlur={handleBlur}
       placeholder={placeholder}
       className={className}
     />
   );
 };
+

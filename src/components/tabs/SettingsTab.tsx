@@ -534,10 +534,10 @@ export const SettingsTab: React.FC = () => {
             <div className="pt-2 mt-1 border-t border-slate-200 dark:border-slate-700">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
                 <Receipt className="w-3 h-3 text-amber-600" />
-                Thuế TNCN (2025, hiệu lực 01/7/2026)
+                Thuế TNCN (Biểu thuế lũy tiến từng phần)
               </h4>
 
-              {/* Dòng Số người phụ thuộc trừ thuế (đúng vị trí mũi tên đỏ) */}
+              {/* Dòng Số người phụ thuộc trừ thuế */}
               <div className="flex items-center justify-between gap-2 py-1.5 px-2 mb-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/80 rounded-lg shadow-sm">
                 <div className="flex flex-col">
                   <span className="text-[11px] font-bold text-amber-950 dark:text-amber-200 leading-tight flex items-center gap-1">
@@ -545,7 +545,7 @@ export const SettingsTab: React.FC = () => {
                     Số người phụ thuộc trừ thuế ({manualEmp?.fullName || manualEmpId})
                   </span>
                   <span className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
-                    Mức giảm trừ NPT: {manualDependents} × {formatVND(config.dependentDeductionAmount ?? 6_200_000)} = <strong className="text-amber-900 dark:text-amber-200">{formatVND(manualDependents * (config.dependentDeductionAmount ?? 6_200_000))}</strong>
+                    Mức giảm trừ NPT: {manualDependents} × {formatVND(config.dependentDeductionAmount ?? 4_400_000)} = <strong className="text-amber-900 dark:text-amber-200">{formatVND(manualDependents * (config.dependentDeductionAmount ?? 4_400_000))}</strong>
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -569,11 +569,11 @@ export const SettingsTab: React.FC = () => {
               </div>
 
               {([
-                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
-                  value: config.personalDeductionAmount ?? 15_500_000,
+                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 11_000_000)}`,
+                  value: config.personalDeductionAmount ?? 11_000_000,
                   onChange: (v: number) => setConfig({ ...config, personalDeductionAmount: v }) },
-                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 6_200_000)}`,
-                  value: config.dependentDeductionAmount ?? 6_200_000,
+                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 4_400_000)}`,
+                  value: config.dependentDeductionAmount ?? 4_400_000,
                   onChange: (v: number) => setConfig({ ...config, dependentDeductionAmount: v }) },
               ] as { label: string; value: number; onChange: (v: number) => void }[]).map(({ label, value, onChange }) => (
                 <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
@@ -591,12 +591,12 @@ export const SettingsTab: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span>Tổng giảm trừ gia cảnh ({manualEmp?.fullName || manualEmpId}):</span>
                   <strong className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                    {formatVND((config.personalDeductionAmount ?? 15_500_000) + manualDependents * (config.dependentDeductionAmount ?? 6_200_000))}
+                    {formatVND((config.personalDeductionAmount ?? 11_000_000) + manualDependents * (config.dependentDeductionAmount ?? 4_400_000))}
                   </strong>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400">
                   <span>Công thức liên kết:</span>
-                  <span>15.500.000 + ({manualDependents} × 6.200.000)</span>
+                  <span>{formatVND(config.personalDeductionAmount ?? 11_000_000)} + ({manualDependents} × {formatVND(config.dependentDeductionAmount ?? 4_400_000)})</span>
                 </div>
               </div>
 

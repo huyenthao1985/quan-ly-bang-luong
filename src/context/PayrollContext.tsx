@@ -401,9 +401,15 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
   };
 
   const updateEmployee = (updated: Employee) => {
-    setEmployees((prev) => sortEmployeesByCode(prev.map((e) => (e.id === updated.id ? updated : e))));
-    if (isDbLoaded) upsertEmployee(updated);
-    showToast(`Đã cập nhật thông tin nhân viên ${updated.fullName}`);
+    setEmployees((prev) => {
+      const next = sortEmployeesByCode(prev.map((e) => (e.id === updated.id ? updated : e)));
+      localStorage.setItem('payroll_employees', JSON.stringify(next));
+      return next;
+    });
+    if (isSupabaseEnabled) {
+      upsertEmployee(updated);
+    }
+    showToast(`Đã cập nhật lương/thông tin nhân viên ${updated.fullName}`);
   };
 
   const deleteEmployee = (id: string) => {
