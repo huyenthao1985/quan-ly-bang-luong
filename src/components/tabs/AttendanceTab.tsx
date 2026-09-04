@@ -1336,16 +1336,16 @@ export const AttendanceTab: React.FC = () => {
           </div>
           <div className="overflow-x-auto w-full">
             <table className="w-full text-xs border-collapse text-left min-w-full">
-              <thead className="bg-[#122842] text-white uppercase text-[11px] font-bold">
+              <thead className="bg-[#122842] text-white uppercase text-[12.5px] font-bold">
                 <tr>
-                  <th className="py-0.5 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-10 w-20 text-[11px]">Mã NV</th>
-                  <th className="py-0.5 px-2 border-r border-slate-700/60 sticky left-20 bg-[#122842] z-10 w-[180px] max-w-[180px] text-[11px]">Họ tên</th>
+                  <th className="py-1 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-10 w-20 text-[12.5px]">Mã NV</th>
+                  <th className="py-1 px-2 border-r border-slate-700/60 sticky left-20 bg-[#122842] z-10 w-[180px] max-w-[180px] text-[12.5px]">Họ tên</th>
                   {[['HC (Công)',''],['OT 150%',''],['Đêm 30%',''],['Đêm 50%',''],['CN 200%',''],['Lễ 300%',''],['Nghỉ Lương',''],['Nghỉ Phép',''],['Nghỉ Không Lương',''],['Chuyên Cần','']].map(([h]) => (
-                    <th key={h} className="py-0.5 px-1 border-r border-slate-700/60 text-center w-24 text-[11px]">{h}</th>
+                    <th key={h} className="py-1 px-1 border-r border-slate-700/60 text-center w-24 text-[12.5px]">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 text-slate-800 dark:text-slate-200 font-medium">
                 {filteredEmps.map(emp => {
                   const rec = attendanceRecords[`${emp.id}_${selectedYear}_${selectedMonth}`];
                   let tHc = 0, tOt = 0, tNightOt = 0, tN = 0, tSun = 0, tHol = 0, tLp = 0, tLa = 0, tLu = 0;
@@ -1396,29 +1396,29 @@ export const AttendanceTab: React.FC = () => {
                     return Number.isInteger(n) ? String(n) : n.toFixed(1);
                   };
                   const cell = (val: number, cls: string) => (
-                    <span className={`inline-block w-full text-center font-semibold ${cls}`}>{fmt(val)}</span>
+                    <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${cls}`}>{fmt(val)}</span>
                   );
                   const hcCong = Math.round((tHc / 8) * 2) / 2;
                   return (
-                    <tr key={emp.id} className="hover:bg-blue-50/40 dark:hover:bg-slate-700/40">
-                      <td className="py-[1px] px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight whitespace-nowrap text-[11px]">{emp.id}</td>
-                      <td className="py-[1px] px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[11px]">{emp.fullName}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(hcCong,'text-slate-800 dark:text-slate-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tOt,'text-amber-900 dark:text-amber-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tN,'text-indigo-900 dark:text-indigo-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tNightOt,'text-violet-900 dark:text-violet-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tSun,'text-red-900 dark:text-red-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tHol,'text-purple-900 dark:text-purple-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLp,'text-slate-800 dark:text-slate-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLa,'text-slate-800 dark:text-slate-200 text-[11px] leading-tight')}</td>
-                      <td className="py-[1px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLu,'text-rose-900 dark:text-rose-200 text-[11px] leading-tight')}</td>
+                    <tr key={emp.id} className="h-[22px] hover:bg-blue-50/40 dark:hover:bg-slate-700/40">
+                      <td className="h-[22px] py-[2px] px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight whitespace-nowrap text-[12.5px]">{emp.id}</td>
+                      <td className="h-[22px] py-[2px] px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">{emp.fullName}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(hcCong,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tOt,'text-amber-900 dark:text-amber-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tN,'text-indigo-900 dark:text-indigo-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tNightOt,'text-violet-900 dark:text-violet-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tSun,'text-red-900 dark:text-red-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tHol,'text-purple-900 dark:text-purple-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLp,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLa,'text-slate-800 dark:text-slate-200')}</td>
+                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLu,'text-rose-900 dark:text-rose-200')}</td>
                       {(() => {
                         // Lấy số phép bù còn lại từ Hồ sơ nhân viên (EmployeeProfilesTab →
                         // field Employee.compLeaveBalance) để xét điều kiện chuyên cần chính xác.
                         const cc = checkChuyenCanEligible(tLu, emp.compLeaveBalance || 0);
                         return (
-                          <td className="py-[1px] px-1 text-center" title={cc.reason}>
-                            <span className={`inline-block w-full text-center font-semibold text-[10.5px] leading-tight ${
+                          <td className="h-[22px] py-[2px] px-1 text-center" title={cc.reason}>
+                            <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${
                               cc.eligible
                                 ? 'text-emerald-700 dark:text-emerald-300'
                                 : 'text-red-700 dark:text-red-300'
