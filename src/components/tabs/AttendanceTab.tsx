@@ -749,8 +749,8 @@ export const AttendanceTab: React.FC = () => {
     });
   }, [selectedYear, selectedMonth, dayColumns]);
 
-  /** Lấy giờ HC hoặc OT (gộp OT150/Đêm/CN/Lễ) của 1 nhân viên trong 1 ngày cụ thể của tháng đang chọn */
-  const getDayVal = (empId: string, dateStr: string, type: 'hc' | 'ot'): number => {
+  /** Lấy giờ HC hoặc OT 150% ngày thường hoặc CN 200% của 1 nhân viên trong 1 ngày cụ thể */
+  const getDayVal = (empId: string, dateStr: string, type: 'hc' | 'ot' | 'sunday'): number => {
     const rec = attendanceRecords[`${empId}_${selectedYear}_${selectedMonth}`];
     const d = rec?.dailyRecords?.[dateStr] as DailyAttendance | undefined;
     if (!d) return 0;
@@ -758,16 +758,19 @@ export const AttendanceTab: React.FC = () => {
     const isSunday = parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
 
     if (isSunday) {
-      // EPCC (sunday-work-200-percent-no-hc-day): Ngày Chủ Nhật không tính ngày công HC (luôn = 0)
-      if (type === 'hc') return 0;
-      // Cột OT hiển thị toàn bộ giờ làm việc ngày Chủ Nhật (hưởng 200%)
+      // EPCC (sunday-work-200-percent-no-hc-day): Ngày Chủ Nhật tính riêng vào dòng CN (200%), không tính vào HC hay OT 150%
+      if (type === 'hc' || type === 'ot') return 0;
       const sunHours = (d.sundayHours || 0) > 0
         ? ((d.sundayHours || 0) + (d.hcHours || 0) + (d.otHours || 0))
         : ((d.hcHours || 0) + (d.otHours || 0));
       return sunHours;
     }
 
+    // Ngày thường: không tính vào dòng CN
+    if (type === 'sunday') return 0;
     if (type === 'hc') return d.hcHours || 0;
+
+    // Giờ làm thêm OT ngày thường (150%)
     let otVal = d.otHours || 0;
     if ((d.nightHours || 0) > 0 && d.checkIn && d.checkOut) {
       const dIn = parseTime24(d.checkIn);
@@ -779,7 +782,7 @@ export const AttendanceTab: React.FC = () => {
         otVal = calcOtHours(sDec, eDec);
       }
     }
-    return otVal + (d.sundayHours || 0) + (d.holidayHours || 0);
+    return otVal + (d.holidayHours || 0);
   };
 
   // Về đầu bảng mỗi khi đổi tháng, để luôn thấy ngày 01 trước tiên
@@ -1446,9 +1449,9 @@ export const AttendanceTab: React.FC = () => {
                   <th rowSpan={2} className="py-2 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[12px] font-bold">
                     Họ Tên
                   </th>
-                  {/* Freeze pane boundary — đường kẻ phân cách rõ giữa vùng cố định và vùng cuộn */}
+                  {/* Freeze pane boundary — bỏ chữ Loại giờ theo yêu cầu (gạch đỏ) */}
                   <th rowSpan={2} className="py-2 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[12px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
-                    Loại giờ
+                    &nbsp;
                   </th>
 
                   {/* Cột các ngày trong tháng: hiển thị M/D (8/1, 8/2...) nền xanh lá cho ngày thường, hồng cho Chủ Nhật */}
@@ -1496,19 +1499,21 @@ export const AttendanceTab: React.FC = () => {
                 ) : filteredEmps.map((emp) => {
                   let hcSum = 0;
                   let otSum = 0;
+                  let sunSum = 0;
                   monthDays.forEach((d) => {
                     hcSum += getDayVal(emp.id, d.dateStr, 'hc');
                     otSum += getDayVal(emp.id, d.dateStr, 'ot');
+                    sunSum += getDayVal(emp.id, d.dateStr, 'sunday');
                   });
 
                   return (
                     <React.Fragment key={emp.id}>
                       {/* HC Row */}
                       <tr className="hover:bg-blue-50/30 dark:hover:bg-slate-700/30">
-                        <td rowSpan={2} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b border-slate-300 dark:border-slate-700 align-middle leading-tight">
+                        <td rowSpan={3} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight">
                           {emp.id}
                         </td>
-                        <td rowSpan={2} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b border-slate-300 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden">
+                        <td rowSpan={3} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden">
                           {emp.fullName}
                         </td>
                         <td className="py-1 px-2 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
@@ -1530,15 +1535,16 @@ export const AttendanceTab: React.FC = () => {
                           );
                         })}
 
-                        <td rowSpan={2} className="py-1 px-2 text-center font-bold text-slate-900 dark:text-white bg-amber-100 dark:bg-amber-900/60 sticky right-0 z-10 align-middle">
+                        <td rowSpan={3} className="py-1 px-2 text-center font-bold text-slate-900 dark:text-white bg-amber-100 dark:bg-amber-900/60 sticky right-0 z-10 align-middle border-b-2 border-slate-400 dark:border-slate-700">
                           <div className="text-blue-700 dark:text-blue-300">{(hcSum / 8).toFixed(1)}</div>
                           <div className="text-amber-700 dark:text-amber-300">{otSum.toFixed(1)}</div>
+                          <div className="text-red-700 dark:text-red-300">{sunSum.toFixed(1)}</div>
                         </td>
                       </tr>
 
-                      {/* OT Row */}
-                      <tr className="border-b-2 border-slate-400 dark:border-slate-700 hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
-                        <td className="py-1 px-2 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)]">
+                      {/* OT 150% Row */}
+                      <tr className="hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
+                        <td className="py-1 px-2 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
                           OT
                         </td>
 
@@ -1549,6 +1555,27 @@ export const AttendanceTab: React.FC = () => {
                               key={d.dateStr}
                               className={`py-1 px-1 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[11px] ${
                                 d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-semibold' : ''
+                              }`}
+                            >
+                              {val > 0 ? val.toFixed(1) : ''}
+                            </td>
+                          );
+                        })}
+                      </tr>
+
+                      {/* CN 200% Row */}
+                      <tr className="border-b-2 border-slate-400 dark:border-slate-700 hover:bg-red-50/30 dark:hover:bg-slate-700/30">
+                        <td className="py-1 px-2 font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap">
+                          CN
+                        </td>
+
+                        {monthDays.map((d) => {
+                          const val = getDayVal(emp.id, d.dateStr, 'sunday');
+                          return (
+                            <td
+                              key={d.dateStr}
+                              className={`py-1 px-1 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[11px] ${
+                                d.isSunday ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold' : ''
                               }`}
                             >
                               {val > 0 ? val.toFixed(1) : ''}
