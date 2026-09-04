@@ -157,6 +157,8 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
       return { 
         ...INITIAL_SALARY_CONFIG, 
         ...parsed, 
+        pitExemptHousingSupport: false,
+        pitExemptLanguageSupport: false,
         personalDeductionAmount: parsed.personalDeductionAmount === 11_000_000 ? 15_500_000 : (parsed.personalDeductionAmount ?? 15_500_000),
         dependentDeductionAmount: parsed.dependentDeductionAmount === 4_400_000 ? 6_200_000 : (parsed.dependentDeductionAmount ?? 6_200_000),
         positionAllowances: mergedAllowances 
@@ -309,6 +311,8 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
           const finalConfig = { 
             ...INITIAL_SALARY_CONFIG, 
             ...remoteConfig, 
+            pitExemptHousingSupport: false,
+            pitExemptLanguageSupport: false,
             personalDeductionAmount: remoteConfig.personalDeductionAmount === 11_000_000 ? 15_500_000 : (remoteConfig.personalDeductionAmount ?? 15_500_000),
             dependentDeductionAmount: remoteConfig.dependentDeductionAmount === 4_400_000 ? 6_200_000 : (remoteConfig.dependentDeductionAmount ?? 6_200_000),
             positionAllowances: mergedAllowances 
