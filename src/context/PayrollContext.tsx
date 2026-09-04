@@ -135,7 +135,7 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
     const raw: Employee[] = saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
     const filtered = raw
       .filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531')
-      .map(e => (e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') ? { ...e, position: 'S. Manager' as Position } : e);
+      .map(e => (e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') ? { ...e, position: 'S. Manager' as Position, baseSalary: 22087000, dependentsCount: 4 } : e);
     return sortEmployeesByCode(filtered);
   });
 
@@ -146,16 +146,21 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
       const parsed: SalaryConfig = JSON.parse(saved);
       const mergedAllowances = { ...INITIAL_SALARY_CONFIG.positionAllowances, ...parsed.positionAllowances };
       const sMan = mergedAllowances['S. Manager'];
-      const isSManAllZero = !sMan || (
-        (sMan.responsibilityAllowance || 0) === 0 &&
-        (sMan.positionTitleAllowance || 0) === 0 &&
-        (sMan.skillAllowance || 0) === 0 &&
-        (sMan.languageSupport || 0) === 0
+      const needsSManFix = !sMan || (
+        sMan.languageSupport === 4800000 ||
+        (sMan.seniorityAllowance || 0) === 0 ||
+        sMan.housingSupport === 3300000
       );
-      if (isSManAllZero) {
+      if (needsSManFix) {
         mergedAllowances['S. Manager'] = { ...INITIAL_SALARY_CONFIG.positionAllowances['S. Manager'] };
       }
-      return { ...INITIAL_SALARY_CONFIG, ...parsed, positionAllowances: mergedAllowances };
+      return { 
+        ...INITIAL_SALARY_CONFIG, 
+        ...parsed, 
+        personalDeductionAmount: parsed.personalDeductionAmount === 11_000_000 ? 15_500_000 : (parsed.personalDeductionAmount ?? 15_500_000),
+        dependentDeductionAmount: parsed.dependentDeductionAmount === 4_400_000 ? 6_200_000 : (parsed.dependentDeductionAmount ?? 6_200_000),
+        positionAllowances: mergedAllowances 
+      };
     } catch {
       return INITIAL_SALARY_CONFIG;
     }
@@ -264,10 +269,12 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
             const normalized = remoteEmployees
               .filter(e => e.id !== '33010452' && e.id !== '33010453' && e.id !== '330104531')
               .map(e => {
-                if ((e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') && e.position !== 'S. Manager') {
-                  const fixed = { ...e, position: 'S. Manager' as Position };
-                  upsertEmployee(fixed);
-                  return fixed;
+                if (e.id === '11704029' || e.fullName === 'Lê Xuân Thảo') {
+                  if (e.position !== 'S. Manager' || e.baseSalary !== 22087000 || (e.dependentsCount ?? 0) < 4) {
+                    const fixed = { ...e, position: 'S. Manager' as Position, baseSalary: 22087000, dependentsCount: 4 };
+                    upsertEmployee(fixed);
+                    return fixed;
+                  }
                 }
                 return e;
               });
@@ -291,18 +298,23 @@ export const PayrollProvider: React.FC<PayrollProviderProps> = ({ children, auth
         if (remoteConfig !== null) {
           const mergedAllowances = { ...INITIAL_SALARY_CONFIG.positionAllowances, ...(remoteConfig.positionAllowances || {}) };
           const sMan = mergedAllowances['S. Manager'];
-          const isSManAllZero = !sMan || (
-            (sMan.responsibilityAllowance || 0) === 0 &&
-            (sMan.positionTitleAllowance || 0) === 0 &&
-            (sMan.skillAllowance || 0) === 0 &&
-            (sMan.languageSupport || 0) === 0
+          const needsSManFix = !sMan || (
+            sMan.languageSupport === 4800000 ||
+            (sMan.seniorityAllowance || 0) === 0 ||
+            sMan.housingSupport === 3300000
           );
-          if (isSManAllZero) {
+          if (needsSManFix) {
             mergedAllowances['S. Manager'] = { ...INITIAL_SALARY_CONFIG.positionAllowances['S. Manager'] };
           }
-          const finalConfig = { ...INITIAL_SALARY_CONFIG, ...remoteConfig, positionAllowances: mergedAllowances };
+          const finalConfig = { 
+            ...INITIAL_SALARY_CONFIG, 
+            ...remoteConfig, 
+            personalDeductionAmount: remoteConfig.personalDeductionAmount === 11_000_000 ? 15_500_000 : (remoteConfig.personalDeductionAmount ?? 15_500_000),
+            dependentDeductionAmount: remoteConfig.dependentDeductionAmount === 4_400_000 ? 6_200_000 : (remoteConfig.dependentDeductionAmount ?? 6_200_000),
+            positionAllowances: mergedAllowances 
+          };
           setSalaryConfig(finalConfig);
-          if (isSManAllZero) {
+          if (needsSManFix) {
             await upsertSalaryConfig(finalConfig);
           }
         } else {

@@ -10,8 +10,8 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     startDate: '2017-04-01',
     phone: '0352386556',
     isFemale: false,
-    baseSalary: 22030000,
-    dependentsCount: 1,
+    baseSalary: 22087000,
+    dependentsCount: 4,
     contractType: 'Official',
     email: 'thao.lexuan@company.com',
     unionMember: true,
@@ -183,8 +183,8 @@ export const INITIAL_SALARY_CONFIG: SalaryConfig = {
   bhtnRate: 0.01, // 1%
   unionFeeFlat: 31500, // 31.500 đ
 
-  personalDeductionAmount: 11_000_000,
-  dependentDeductionAmount: 4_400_000,
+  personalDeductionAmount: 15_500_000,
+  dependentDeductionAmount: 6_200_000,
   pitExemptHousingSupport: false,
   pitExemptLanguageSupport: false,
 
@@ -195,12 +195,12 @@ export const INITIAL_SALARY_CONFIG: SalaryConfig = {
       cleanRoomAllowance: 0,
       positionTitleAllowance: 600000,
       developmentAllowance: 0,
-      seniorityAllowance: 0,
+      seniorityAllowance: 3300000,
       skillAllowance: 500000,
-      languageSupport: 4800000,
+      languageSupport: 0,
       diligenceBonus: 200000,
       transportSupport: 200000,
-      housingSupport: 3300000,
+      housingSupport: 4700000,
     },
     'Manager': {
       position: 'Manager',

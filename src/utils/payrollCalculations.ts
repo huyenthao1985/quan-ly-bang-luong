@@ -1,26 +1,22 @@
 import { CalculatedPayslip, Employee, EmployeeAttendanceRecord, SalaryConfig } from '../types/payroll';
 
-// Biểu thuế TNCN lũy tiến từng phần 7 bậc theo Luật Thuế TNCN hiện hành (Điều 22 Luật Thuế TNCN):
-// - Bậc 1: ≤ 5 triệu đồng/tháng: 5% (trừ nhanh: 0)
-// - Bậc 2: > 5 - 10 triệu đồng/tháng: 10% (trừ nhanh: 0.25 triệu)
-// - Bậc 3: > 10 - 18 triệu đồng/tháng: 15% (trừ nhanh: 0.75 triệu)
-// - Bậc 4: > 18 - 32 triệu đồng/tháng: 20% (trừ nhanh: 1.65 triệu)
-// - Bậc 5: > 32 - 52 triệu đồng/tháng: 25% (trừ nhanh: 3.25 triệu)
-// - Bậc 6: > 52 - 80 triệu đồng/tháng: 30% (trừ nhanh: 5.85 triệu)
-// - Bậc 7: > 80 triệu đồng/tháng: 35% (trừ nhanh: 9.85 triệu)
+// Biểu thuế TNCN lũy tiến từng phần 5 bậc theo Luật Thuế TNCN 2025/2026 (hiệu lực kỳ lương từ 01/7/2026):
+// - Bậc 1: ≤ 10 triệu đồng/tháng: 5% (trừ nhanh: 0)
+// - Bậc 2: > 10 - 30 triệu đồng/tháng: 10% (trừ nhanh: 0.5 triệu)
+// - Bậc 3: > 30 - 60 triệu đồng/tháng: 20% (trừ nhanh: 3.5 triệu)
+// - Bậc 4: > 60 - 100 triệu đồng/tháng: 30% (trừ nhanh: 9.5 triệu)
+// - Bậc 5: > 100 triệu đồng/tháng: 35% (trừ nhanh: 14.5 triệu)
 const PIT_BRACKETS: { upTo: number; rate: number }[] = [
-  { upTo: 5_000_000, rate: 0.05 },
-  { upTo: 10_000_000, rate: 0.10 },
-  { upTo: 18_000_000, rate: 0.15 },
-  { upTo: 32_000_000, rate: 0.20 },
-  { upTo: 52_000_000, rate: 0.25 },
-  { upTo: 80_000_000, rate: 0.30 },
+  { upTo: 10_000_000, rate: 0.05 },
+  { upTo: 30_000_000, rate: 0.10 },
+  { upTo: 60_000_000, rate: 0.20 },
+  { upTo: 100_000_000, rate: 0.30 },
   { upTo: Infinity, rate: 0.35 },
 ];
 
 /**
- * Tính thuế TNCN lũy tiến từng phần theo biểu thuế hiện hành trên thu nhập tính thuế
- * (đã trừ BHXH/BHYT/BHTN, giảm trừ bản thân 11tr, giảm trừ NPT 4.4tr/người và phần miễn thuế OT/ca đêm).
+ * Tính thuế TNCN lũy tiến từng phần (biểu 5 bậc, Luật TNCN 2026) trên thu nhập tính thuế
+ * (đã trừ BHXH/BHYT/BHTN, giảm trừ bản thân 15.5tr, giảm trừ NPT 6.2tr/người).
  * Tự động tính toán và khấu trừ vào Bảng lương; nếu HR nhập tay thì ưu tiên số nhập tay.
  */
 export function calculateProgressivePIT(taxableIncome: number): number {
@@ -310,19 +306,21 @@ export function calculatePayslip(
   // Tổng thu nhập được miễn thuế (NĐ145 + Nhà ở + Tiếng)
   const pitExemptAmount = otNd145Exempt + otherPitExempt;
 
-  // 3. Giảm trừ gia cảnh (Mặc định: bản thân 11tr, NPT 4.4tr/người)
-  const personalDeductionAmount = config.personalDeductionAmount ?? 11_000_000;
-  const dependentDeductionAmount = config.dependentDeductionAmount ?? 4_400_000;
+  // 3. Giảm trừ gia cảnh (Luật TNCN 2025/2026: bản thân 15.5tr, NPT 6.2tr/người)
+  const personalDeductionAmount = config.personalDeductionAmount ?? 15_500_000;
+  const dependentDeductionAmount = config.dependentDeductionAmount ?? 6_200_000;
   const numberOfDependents = attendanceRecord?.manualNumberOfDependents ?? employee.numberOfDependents ?? employee.dependentsCount ?? 0;
   const totalPersonalDeduction = personalDeductionAmount + numberOfDependents * dependentDeductionAmount;
 
   // 4. Bảo hiểm bắt buộc đã đóng (BHXH + BHYT + BHTN)
   const insuranceDeductionForPit = bhxhDeduction + bhytDeduction + bhtnDeduction;
 
-  // 5. Thu nhập tính thuế (TNTT) = MAX(0, Tổng thu nhập - Miễn thuế NĐ145 - Miễn thuế khác - BH - Giảm trừ gia cảnh)
-  const pitTaxableIncome = Math.max(0, totalIncome - pitExemptAmount - insuranceDeductionForPit - totalPersonalDeduction);
+  // 5. Thu nhập tính thuế (TNTT) theo công thức chuẩn PPC (ô E76 = MAX(0, D42 - E75 - E73 - E74))
+  // Khớp chính xác tuyệt đối với phiếu lương thực tế: TNTT = 50.145.645 - 3.096.135 - 15.500.000 - 24.800.000 = 6.749.510 đ
+  // Phần miễn thuế OT NĐ145 (ô E71) là số tham khảo memo, không trừ vào TNTT.
+  const pitTaxableIncome = Math.max(0, totalIncome - otherPitExempt - insuranceDeductionForPit - totalPersonalDeduction);
 
-  // 6. Thuế TNCN lũy tiến từng phần tự động tính theo biểu thuế 7 bậc
+  // 6. Thuế TNCN lũy tiến 5 bậc tự động tính (Bậc 1: ≤ 10tr 5% -> 6.749.510 × 5% = 337.476 đ)
   const pitAutoCalculated = calculateProgressivePIT(pitTaxableIncome);
 
   // Nếu người dùng nhập tay (không rỗng / undefined) thì ưu tiên số nhập tay, ngược lại TỰ ĐỘNG TÍNH THEO CÔNG THỨC CHUẨN

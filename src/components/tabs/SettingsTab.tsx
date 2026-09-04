@@ -569,11 +569,11 @@ export const SettingsTab: React.FC = () => {
               </div>
 
               {([
-                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 11_000_000)}`,
-                  value: config.personalDeductionAmount ?? 11_000_000,
+                { label: `Giảm trừ bản thân (VNĐ) = ${formatVND(config.personalDeductionAmount ?? 15_500_000)}`,
+                  value: config.personalDeductionAmount ?? 15_500_000,
                   onChange: (v: number) => setConfig({ ...config, personalDeductionAmount: v }) },
-                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 4_400_000)}`,
-                  value: config.dependentDeductionAmount ?? 4_400_000,
+                { label: `Giảm trừ người phụ thuộc (VNĐ) = ${formatVND(config.dependentDeductionAmount ?? 6_200_000)}`,
+                  value: config.dependentDeductionAmount ?? 6_200_000,
                   onChange: (v: number) => setConfig({ ...config, dependentDeductionAmount: v }) },
               ] as { label: string; value: number; onChange: (v: number) => void }[]).map(({ label, value, onChange }) => (
                 <div key={label} className="flex items-center justify-between gap-2 py-0.5 border-b border-slate-100 dark:border-slate-700/50 last:border-0">
@@ -591,12 +591,12 @@ export const SettingsTab: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <span>Tổng giảm trừ gia cảnh ({manualEmp?.fullName || manualEmpId}):</span>
                   <strong className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                    {formatVND((config.personalDeductionAmount ?? 11_000_000) + manualDependents * (config.dependentDeductionAmount ?? 4_400_000))}
+                    {formatVND((config.personalDeductionAmount ?? 15_500_000) + manualDependents * (config.dependentDeductionAmount ?? 6_200_000))}
                   </strong>
                 </div>
                 <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-slate-700/60 text-[10px] text-slate-500 dark:text-slate-400">
                   <span>Công thức liên kết:</span>
-                  <span>{formatVND(config.personalDeductionAmount ?? 11_000_000)} + ({manualDependents} × {formatVND(config.dependentDeductionAmount ?? 4_400_000)})</span>
+                  <span>{formatVND(config.personalDeductionAmount ?? 15_500_000)} + ({manualDependents} × {formatVND(config.dependentDeductionAmount ?? 6_200_000)})</span>
                 </div>
               </div>
 

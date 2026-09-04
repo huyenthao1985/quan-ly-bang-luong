@@ -541,7 +541,18 @@ export const PayslipTab: React.FC = () => {
                   <td className="py-0.5 px-3 text-right font-medium bg-amber-50/60 dark:bg-amber-950/20">{formatVND(payslip.otherDeduction)}</td>
                 </tr>
 
-                {Array.from({ length: 22 }).map((_, idx) => (
+                <tr className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold border-t border-b border-slate-300 dark:border-slate-700 text-[11px]">
+                  <th className="py-0.5 px-2 border-r border-slate-300 dark:border-slate-800 text-center">#</th>
+                  <th className="py-0.5 px-3 border-r border-slate-300 dark:border-slate-800">B/ THÔNG TIN KHÁC</th>
+                  <th className="py-0.5 px-3 text-right">Số lượng</th>
+                </tr>
+                <tr>
+                  <td className="py-0.5 px-2 text-center border-r border-slate-300 dark:border-slate-800">a</td>
+                  <td className="py-0.5 px-3 border-r border-slate-300 dark:border-slate-800">Số người phụ thuộc</td>
+                  <td className="py-0.5 px-3 text-right font-medium">{payslip.numberOfDependents ?? selectedEmp.dependentsCount ?? 0} người</td>
+                </tr>
+
+                {Array.from({ length: 20 }).map((_, idx) => (
                   <tr key={`empty-${idx}`}>
                     <td className="py-0.5 px-2 text-center border-r border-slate-300 dark:border-slate-800">&nbsp;</td>
                     <td className="py-0.5 px-3 border-r border-slate-300 dark:border-slate-800">&nbsp;</td>
