@@ -1443,14 +1443,14 @@ export const AttendanceTab: React.FC = () => {
               <thead className="sticky top-0 z-20 text-xs shadow-sm">
                 {/* Dòng 1: M/D (8/1, 8/2, ...) theo định dạng tham chiếu ảnh 1 */}
                 <tr className="bg-[#122842] text-white">
-                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle uppercase text-[11px] font-bold">
+                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle uppercase text-[12.5px] font-bold">
                     Mã NV
                   </th>
-                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[11px] font-bold">
+                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[12.5px] font-bold">
                     Họ Tên
                   </th>
                   {/* Freeze pane boundary — bỏ chữ Loại giờ theo yêu cầu (gạch đỏ) */}
-                  <th rowSpan={2} className="py-1 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[11px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
+                  <th rowSpan={2} className="py-1 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[12.5px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
                     &nbsp;
                   </th>
 
@@ -1458,7 +1458,7 @@ export const AttendanceTab: React.FC = () => {
                   {monthDays.map((d) => (
                     <th
                       key={`date-${d.dateStr}`}
-                      className={`min-w-[32px] px-0.5 py-0.5 text-center font-bold text-[10.5px] border-r border-b border-dashed border-slate-400/80 leading-tight ${
+                      className={`min-w-[34px] px-0.5 py-0.5 text-center font-bold text-[12px] border-r border-b border-dashed border-slate-400/80 leading-tight ${
                         d.isSunday
                           ? 'bg-[#ffcdd2] text-[#991b1b] dark:bg-[#7f1d1d] dark:text-[#fecaca]'
                           : 'bg-[#c8e6c9] text-[#134e4a] dark:bg-[#064e3b] dark:text-[#a7f3d0]'
@@ -1468,7 +1468,7 @@ export const AttendanceTab: React.FC = () => {
                     </th>
                   ))}
 
-                  <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[11px] font-bold">
+                  <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12.5px] font-bold">
                     Tổng
                   </th>
                 </tr>
@@ -1478,7 +1478,7 @@ export const AttendanceTab: React.FC = () => {
                   {monthDays.map((d) => (
                     <th
                       key={`dayname-${d.dateStr}`}
-                      className={`min-w-[32px] px-0.5 py-0 text-center font-bold text-[9.5px] bg-[#e2e8f0] dark:bg-slate-700 border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${
+                      className={`min-w-[34px] px-0.5 py-0 text-center font-bold text-[11px] bg-[#e2e8f0] dark:bg-slate-700 border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${
                         d.isSunday
                           ? 'text-red-600 dark:text-red-400'
                           : 'text-slate-800 dark:text-slate-200'
@@ -1509,15 +1509,15 @@ export const AttendanceTab: React.FC = () => {
                   return (
                     <React.Fragment key={emp.id}>
                       {/* HC Row */}
-                      <tr className="h-[21px] hover:bg-blue-50/30 dark:hover:bg-slate-700/30">
-                        <td rowSpan={3} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight text-[11px]">
+                      <tr className="h-[22px] hover:bg-blue-50/30 dark:hover:bg-slate-700/30">
+                        <td rowSpan={3} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight text-[12.5px]">
                           {emp.id}
                         </td>
-                        <td rowSpan={3} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[11px]">
+                        <td rowSpan={3} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">
                           {emp.fullName}
                         </td>
-                        <td className="h-[21px] py-[2.5px] px-1 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap leading-tight">
-                          <span className="text-[10px] text-black dark:text-white font-bold">HC</span> <span className="text-[9px] font-normal text-black dark:text-slate-300">(Công)</span>
+                        <td className="h-[22px] py-[2px] px-1 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap leading-tight">
+                          <span className="text-[11.5px] text-black dark:text-white font-bold">HC</span> <span className="text-[10.5px] font-normal text-black dark:text-slate-300">(Công)</span>
                         </td>
 
                         {monthDays.map((d) => {
@@ -1526,8 +1526,8 @@ export const AttendanceTab: React.FC = () => {
                           return (
                             <td
                               key={d.dateStr}
-                              className={`h-[21px] py-[2.5px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[10.5px] leading-tight ${
-                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-semibold' : ''
+                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
+                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-bold' : ''
                               }`}
                             >
                               {val > 0 ? cong.toFixed(1) : ''}
@@ -1535,14 +1535,14 @@ export const AttendanceTab: React.FC = () => {
                           );
                         })}
 
-                        <td className="h-[21px] py-[2.5px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[10.5px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
                           {(hcSum / 8).toFixed(1)}
                         </td>
                       </tr>
 
                       {/* OT 150% Row */}
-                      <tr className="h-[21px] hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
-                        <td className="h-[21px] py-[2.5px] px-1 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[10px] leading-tight">
+                      <tr className="h-[22px] hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
+                        <td className="h-[22px] py-[2px] px-1 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
                           OT
                         </td>
 
@@ -1551,8 +1551,8 @@ export const AttendanceTab: React.FC = () => {
                           return (
                             <td
                               key={d.dateStr}
-                              className={`h-[21px] py-[2.5px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[10.5px] leading-tight ${
-                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-semibold' : ''
+                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
+                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-bold' : ''
                               }`}
                             >
                               {val > 0 ? val.toFixed(1) : ''}
@@ -1560,14 +1560,14 @@ export const AttendanceTab: React.FC = () => {
                           );
                         })}
 
-                        <td className="h-[21px] py-[2.5px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[10.5px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
                           {otSum.toFixed(1)}
                         </td>
                       </tr>
 
                       {/* CN 200% Row */}
-                      <tr className="h-[21px] border-b-2 border-slate-400 dark:border-slate-700 hover:bg-red-50/30 dark:hover:bg-slate-700/30">
-                        <td className="h-[21px] py-[2.5px] px-1 font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[10px] leading-tight">
+                      <tr className="h-[22px] border-b-2 border-slate-400 dark:border-slate-700 hover:bg-red-50/30 dark:hover:bg-slate-700/30">
+                        <td className="h-[22px] py-[2px] px-1 font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
                           CN
                         </td>
 
@@ -1576,7 +1576,7 @@ export const AttendanceTab: React.FC = () => {
                           return (
                             <td
                               key={d.dateStr}
-                              className={`h-[21px] py-[2.5px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[10.5px] leading-tight ${
+                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
                                 d.isSunday ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold' : ''
                               }`}
                             >
@@ -1585,7 +1585,7 @@ export const AttendanceTab: React.FC = () => {
                           );
                         })}
 
-                        <td className="h-[21px] py-[2.5px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[10.5px] leading-tight border-l border-amber-200 dark:border-amber-800 border-b-2 border-slate-400 dark:border-slate-700">
+                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800 border-b-2 border-slate-400 dark:border-slate-700">
                           {sunSum.toFixed(1)}
                         </td>
                       </tr>
