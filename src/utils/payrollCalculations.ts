@@ -168,24 +168,20 @@ export function calculatePayslip(
   const ot70Amount = Math.round(ot70Hours * hourlyRate * (config.ot70Rate ?? 0.7));
   const holidayNightOt90Amount = Math.round(holidayNightOt90Hours * hourlyRate * (config.holidayNightOt90Rate ?? 0.9));
 
-  // EPCC (allowance-ratio-is-calendar-not-attendance) — FIX ROOT CAUSE "prorate phụ cấp cố
-  // định sai cơ sở": đối chiếu trực tiếp công thức D27/D28/D29/D31/D33/D34/D37/D38 của
-  // BangLuong_PPC.xlsx, VD ô D27 = ROUND(E62/26*D10,0) — nghĩa là:
-  //   phụ cấp = giá trị cấu hình (config) × (Ngày công chuẩn phụ cấp CỦA THÁNG NÀY / 26)
-  // "Ngày công chuẩn phụ cấp CỦA THÁNG NÀY" (D10) là SỐ NGÀY CÔNG CHUẨN THEO LỊCH của
-  // tháng đó (áp dụng chung toàn công ty, VD 25,625 hoặc 27 ngày tuỳ tháng) — KHÔNG phải số
-  // ngày nhân viên đó thực đi làm/được trả lương. Hệ số này KHÔNG bị trần ở 1.0 (27/26 ≈
-  // 103,8% vẫn hợp lệ trong file gốc). Bản sửa TRƯỚC ĐÂY (attendanceRatio = số ngày được trả
-  // lương/standardDays, trần tại 1.0) đã nhầm 2 khái niệm này — vô tình CẮT GIẢM phụ cấp
-  // của nhân viên nghỉ phép, trong khi file gốc công ty không hề làm vậy (phụ cấp cố định
-  // chỉ biến động theo lịch tháng, không theo chấm công cá nhân).
-  // ⚠️ CẦN BỔ SUNG: thêm field `monthStandardDays` (số ngày công chuẩn phụ cấp của tháng,
-  // HR nhập mỗi tháng — tương ứng ô D10) vào kiểu EmployeeAttendanceRecord/SalaryConfig
-  // trong types/payroll.ts (file này không có sẵn nên chưa tự ý sửa type). Trước khi field
-  // đó tồn tại, allowanceRatio tạm mặc định = 1 (= standardDays/standardDays), tức trả ĐỦ
-  // 100% phụ cấp theo config — đúng hành vi mặc định của file gốc khi không có biến động
-  // theo lịch tháng, và AN TOÀN hơn việc tự ý cắt giảm theo chấm công như bản cũ.
-  const monthStandardDays = (attendanceRecord as any)?.monthStandardDays ?? standardDays;
+  // EPCC (allowance-ratio-attendance-based) — Hệ số phụ cấp tính tự động từ chấm công:
+  //   monthStandardDays = HC công + Nghỉ hưởng lương + Nghỉ phép năm + Nghỉ lương tối thiểu
+  //
+  // Nghỉ phép hưởng lương và nghỉ phép năm là ngày công hợp lệ (nhân viên được trả lương),
+  // phải tính vào tổng ngày công để xác định đúng tỷ lệ phụ cấp tháng này.
+  // Ví dụ: HC=26 + Nghỉ phép=1 → monthStandardDays=27 → allowanceRatio=27/26 ≈ 103.85%
+  //
+  // ⚠️ KHÔNG dùng attendanceRecord.monthStandardDays nữa — trường đó đã bị lưu sai giá trị
+  // mặc định (=26) từ phiên bản trước, khiến override luôn thắng và auto-tính không phát huy.
+  // Tính TRỰC TIẾP từ dữ liệu chấm công; nếu chưa có chấm công → mặc định 100% (standardDays).
+  const computedHcDays = hcTotalHours / standardHoursPerDay;
+  const autoMonthStandardDays = computedHcDays + leavePaidDays + leaveAnnualDays + minWageLeaveDays;
+  // Nếu chưa có dữ liệu chấm công (autoMonthStandardDays = 0) → trả đủ 100% phụ cấp
+  const monthStandardDays = autoMonthStandardDays > 0 ? autoMonthStandardDays : standardDays;
   const allowanceRatio = standardDays > 0 ? monthStandardDays / standardDays : 1;
 
   // Allowances (10..19) — nhân theo allowanceRatio (hệ số ngày công chuẩn theo lịch tháng),

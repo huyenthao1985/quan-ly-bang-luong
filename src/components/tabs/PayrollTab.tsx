@@ -12,9 +12,15 @@ export const PayrollTab: React.FC = () => {
   const { authRole, authProfile, employees, selectedEmployeeId, setSelectedEmployeeId } = usePayroll();
   const [unlockedEmpId, setUnlockedEmpId] = useState<string | null>(null);
 
-  // Quyền quản trị tối cao của Admin (Manager/S. Manager)
+  // Quyền quản trị của Admin (Manager/S. Manager), VP và KHO
   const isSuperAdmin = authRole === 'admin';
-  const [subTab, setSubTab] = useState<PayrollSubTab>(isSuperAdmin ? 'settings' : 'payslip');
+  const em = (authProfile?.email || '').toLowerCase();
+  const un = (authProfile?.username || '').toLowerCase();
+  const isVP = em.includes('vp') || un === 'vp';
+  const isKHO = em.includes('kho') || un === 'kho';
+  const isManagerOrDept = isSuperAdmin || isVP || isKHO;
+
+  const [subTab, setSubTab] = useState<PayrollSubTab>('settings');
 
   const subTabs = [
     { id: 'settings' as PayrollSubTab, label: 'Cài đặt', icon: SettingsIcon },
@@ -35,12 +41,12 @@ export const PayrollTab: React.FC = () => {
     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
   };
 
-  // Với Admin (S. Manager), có toàn quyền quản trị ngay lập tức
-  if (isSuperAdmin) {
+  // Với Admin (S. Manager), VP và KHO: có toàn quyền quản trị / setup phạm vi nhân viên của mình
+  if (isManagerOrDept) {
     return (
       <div style={payrollContainerStyle} className="space-y-[3mm]">
-        {/* ── Sheet toggle cho Admin ── */}
-        <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex items-center gap-3">
+        {/* ── Sheet toggle cho Admin / VP / KHO ── */}
+        <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
           <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80">
             {subTabs.map(({ id, label, icon: Icon }) => (
               <button
@@ -57,16 +63,23 @@ export const PayrollTab: React.FC = () => {
               </button>
             ))}
           </div>
+
+          <div className="text-xs font-bold text-slate-700 dark:text-slate-200 px-3 py-1 bg-white/80 dark:bg-slate-900/80 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 shadow-xs">
+            {isSuperAdmin && <span className="text-amber-500 font-extrabold">👑 Quản Trị Viên (Toàn quyền)</span>}
+            {isVP && <span className="text-blue-600 dark:text-blue-400 font-extrabold">🏢 Quản Lý Văn Phòng (VP)</span>}
+            {isKHO && <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">📦 Quản Lý Kho (KHO)</span>}
+          </div>
         </div>
 
         {subTab === 'settings' && <SettingsTab />}
         {subTab === 'payslip' && <PayslipTab />}
-        {subTab === 'accounts' && <AccountsTab />}
+        {subTab === 'accounts' && isSuperAdmin && <AccountsTab />}
       </div>
     );
   }
 
-  // Nếu chưa đăng nhập lớp thứ 2 xem Bảng lương
+  // Đối với tài khoản nhân viên cá nhân (Staff/OP/User thông thường):
+  // Chỉ được xem bảng lương của chính mình, TUYỆT ĐỐI không có quyền xem của người khác hoặc vào Cài đặt
   const activeEmpId = unlockedEmpId || (authProfile?.employee_id ? authProfile.employee_id : null);
 
   React.useEffect(() => {
@@ -92,7 +105,7 @@ export const PayrollTab: React.FC = () => {
 
   return (
     <div style={payrollContainerStyle} className="space-y-[3mm]">
-      {/* ── Banner thông tin nhân viên đang xem bảng lương ── */}
+      {/* ── Banner thông tin nhân viên đang xem bảng lương cá nhân ── */}
       <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
@@ -106,7 +119,7 @@ export const PayrollTab: React.FC = () => {
               </span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400">
-              Mã nhân viên: <strong className="text-slate-700 dark:text-slate-300">{activeEmpId}</strong> (Phiếu lương bảo mật)
+              Mã nhân viên: <strong className="text-slate-700 dark:text-slate-300">{activeEmpId}</strong> (Phiếu lương cá nhân bảo mật)
             </div>
           </div>
         </div>
@@ -123,29 +136,8 @@ export const PayrollTab: React.FC = () => {
         </button>
       </div>
 
-      {/* ── Sheet toggle cho Cài đặt / Bảng lương ── */}
-      <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-md p-3 rounded-xl shadow-md border border-white/20 dark:border-slate-700/50 flex items-center gap-3">
-        <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80">
-          {subTabs.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setSubTab(id)}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-[0.9rem] font-semibold transition-all cursor-pointer ${
-                subTab === id
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {subTab === 'settings' && <SettingsTab />}
-      {subTab === 'payslip' && <PayslipTab />}
-      {subTab === 'accounts' && <AccountsTab />}
+      {/* Chỉ hiển thị Phiếu lương cá nhân, không có nút Cài đặt để bảo mật */}
+      <PayslipTab />
     </div>
   );
 };

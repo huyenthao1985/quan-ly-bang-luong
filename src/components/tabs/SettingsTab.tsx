@@ -38,7 +38,11 @@ export const SettingsTab: React.FC = () => {
 
   // EPCC (account-scope-filter) — Lọc vị trí và nhân viên cho phép:
   const isSuperAdmin = authRole === 'admin';
-  const canEdit = isSuperAdmin || authRole === 'editor' || activeRole !== 'User';
+  const em = (authProfile?.email || '').toLowerCase();
+  const un = (authProfile?.username || '').toLowerCase();
+  const isVP = em.includes('vp') || un === 'vp';
+  const isKHO = em.includes('kho') || un === 'kho';
+  const canEdit = isSuperAdmin || isVP || isKHO || authRole === 'editor' || activeRole !== 'User';
 
   // Tự động đồng bộ state khi context tải xong từ Supabase/localStorage
   useEffect(() => {
@@ -49,14 +53,9 @@ export const SettingsTab: React.FC = () => {
     setPermMatrix(payrollViewPermissions);
   }, [payrollViewPermissions]);
 
-  const em = (authProfile?.email || '').toLowerCase();
-  const un = (authProfile?.username || '').toLowerCase();
-  const isVP = em.includes('vp') || un === 'vp';
-  const isKHO = em.includes('kho') || un === 'kho';
-
   // Lấy mã NV liên kết (từ profile hoặc email ảo mã NV)
   const linkedEmployeeId = authProfile?.employee_id ||
-    (em.endsWith('@imvina.com') ? em.replace('@imvina.com', '') : null) ||
+    (em.endsWith('@imvina.com') && !isVP && !isKHO ? em.replace('@imvina.com', '') : null) ||
     (em.endsWith('@noemail.local') && !isVP && !isKHO ? em.replace('@noemail.local', '') : null);
 
   let visibleEmployees = employees;
@@ -67,10 +66,13 @@ export const SettingsTab: React.FC = () => {
   } else if (isKHO) {
     visibleEmployees = employees.filter((emp) => ['Leader', 'Staff', 'OP'].includes(emp.position));
   } else if (linkedEmployeeId) {
+    // Tài khoản nhân viên cá nhân: chỉ thấy đúng chính mình, TUYỆT ĐỐI không lộ người khác
     const myEmps = employees.filter((emp) => emp.id.toLowerCase() === linkedEmployeeId.toLowerCase());
-    visibleEmployees = myEmps.length > 0 ? myEmps : employees;
+    visibleEmployees = myEmps.length > 0 ? myEmps : [];
   } else if (authProfile?.employee_id) {
     visibleEmployees = employees.filter((emp) => emp.id === authProfile.employee_id);
+  } else {
+    visibleEmployees = [];
   }
 
   // Tự động chuyển selectedEmployeeId về nhân viên đang đăng nhập nếu là tài khoản cá nhân
@@ -97,7 +99,7 @@ export const SettingsTab: React.FC = () => {
   const manualEmpId = selectedEmployeeId || (visibleEmployees[0]?.id ?? employees[0]?.id ?? '');
   const setManualEmpId = setSelectedEmployeeId;
   const manualEmp = visibleEmployees.find((e) => e.id === manualEmpId) || visibleEmployees[0] || employees[0];
-  const manualAttendanceKey = `${manualEmp.id}_${selectedYear}_${selectedMonth}`;
+  const manualAttendanceKey = `${manualEmp?.id || ''}_${selectedYear}_${selectedMonth}`;
   const manualAttendanceRecord = attendanceRecords[manualAttendanceKey];
   const manualPayslip = manualEmp
     ? calculatePayslip(manualEmp, manualAttendanceRecord, salaryConfig)
@@ -136,9 +138,16 @@ export const SettingsTab: React.FC = () => {
   const [manualUnauthorizedAbsence, setManualUnauthorizedAbsence] = useState<number>(
     manualAttendanceRecord?.manualUnauthorizedAbsenceDays ?? 0
   );
+  // EPCC (month-standard-days-input) — phụ cấp giờ LUÔN auto-tính từ chấm công trong
+  // payrollCalculations (HC + nghỉ hưởng lương + nghỉ phép năm). Field này chỉ còn dùng
+  // để hiển thị thông tin cho HR, KHÔNG lưu vào record (tránh ghi đè auto-tính).
+  // State null = chưa cần hiển thị, lấy từ payslip auto sau khi tính xong.
+
   const [manualDependents, setManualDependents] = useState<number>(
     manualAttendanceRecord?.manualNumberOfDependents ?? manualEmp?.numberOfDependents ?? manualEmp?.dependentsCount ?? 0
   );
+  const [manualBaseSalary, setManualBaseSalary] = useState<number>(manualEmp?.baseSalary || 0);
+  const [manualInsuranceBaseSalary, setManualInsuranceBaseSalary] = useState<number>(manualEmp?.insuranceBaseSalary || 0);
 
   // Nạp lại giá trị ô nhập khi đổi nhân viên/tháng/năm đang chọn ở mục này, tránh hiện giá
   // trị của nhân viên/tháng trước đó còn sót trong state cục bộ.
@@ -150,25 +159,34 @@ export const SettingsTab: React.FC = () => {
     setManualOtherDeduction(manualAttendanceRecord?.manualOtherDeduction ?? 0);
     setManualUnauthorizedAbsence(manualAttendanceRecord?.manualUnauthorizedAbsenceDays ?? 0);
     setManualDependents(manualAttendanceRecord?.manualNumberOfDependents ?? manualEmp?.numberOfDependents ?? manualEmp?.dependentsCount ?? 0);
+    setManualBaseSalary(manualEmp?.baseSalary || 0);
+    setManualInsuranceBaseSalary(manualEmp?.insuranceBaseSalary || 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manualEmpId, selectedMonth, selectedYear, manualEmp]);
 
   // Tính toán phiếu lương live cho NV đang chọn theo các thông số nhập tay hiện thời
-  const currentAttendanceForCalc = useMemo(() => ({
-    ...(manualAttendanceRecord || {
+  const currentAttendanceForCalc = useMemo(() => {
+    // Destructure để loại bỏ monthStandardDays khỏi record gốc — field này đã bị lưu sai
+    // giá trị mặc định (=26) ở phiên bản trước. payrollCalculations giờ LUÔN auto-tính từ
+    // chấm công, không cần field này nữa. Xóa khỏi spread để tránh ghi đè auto-tính.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { monthStandardDays: _removed, ...recordWithoutStdDays } = manualAttendanceRecord || {
       employeeId: manualEmpId,
       month: selectedMonth,
       year: selectedYear,
       dailyRecords: {},
-    }),
-    manualNumberOfDependents: manualDependents,
-    manualPersonalTax: manualTax.trim() === '' ? undefined : Number(manualTax),
-    manualInsuranceArrears: manualArrears,
-    manualOtherDeduction: manualOtherDeduction,
-    manualFemaleSupportHours: manualFemaleHours,
-    manualTransferredAnnualLeave: manualTransferredLeave,
-    manualUnauthorizedAbsenceDays: manualUnauthorizedAbsence,
-  }), [manualAttendanceRecord, manualEmpId, selectedMonth, selectedYear, manualDependents, manualTax, manualArrears, manualOtherDeduction, manualFemaleHours, manualTransferredLeave, manualUnauthorizedAbsence]);
+    };
+    return {
+      ...recordWithoutStdDays,
+      manualNumberOfDependents: manualDependents,
+      manualPersonalTax: manualTax.trim() === '' ? undefined : Number(manualTax),
+      manualInsuranceArrears: manualArrears,
+      manualOtherDeduction: manualOtherDeduction,
+      manualFemaleSupportHours: manualFemaleHours,
+      manualTransferredAnnualLeave: manualTransferredLeave,
+      manualUnauthorizedAbsenceDays: manualUnauthorizedAbsence,
+    };
+  }, [manualAttendanceRecord, manualEmpId, selectedMonth, selectedYear, manualDependents, manualTax, manualArrears, manualOtherDeduction, manualFemaleHours, manualTransferredLeave, manualUnauthorizedAbsence]);
 
   const currentManualPayslip = useMemo(() => {
     if (!manualEmp) return null;
@@ -212,6 +230,9 @@ export const SettingsTab: React.FC = () => {
     }
     updateSalaryConfig(config);
     updatePayrollViewPermissions(permMatrix);
+    // KHÔNG lưu monthStandardDays vào record — payrollCalculations giờ LUÔN auto-tính
+    // từ dữ liệu chấm công (HC + nghỉ hưởng lương + nghỉ phép năm). Việc lưu giá trị mặc định
+    // 26 vào record ở phiên bản cũ đã gây ra bug override. Chỉ lưu các khoản nhập tay thực sự.
     updateAttendanceManualOverrides(manualEmpId, {
       manualFemaleSupportHours: manualFemaleHours,
       manualTransferredAnnualLeave: manualTransferredLeave,
@@ -224,11 +245,13 @@ export const SettingsTab: React.FC = () => {
     if (manualEmp && updateEmployee) {
       updateEmployee({
         ...manualEmp,
+        baseSalary: manualBaseSalary,
+        insuranceBaseSalary: manualInsuranceBaseSalary > 0 ? manualInsuranceBaseSalary : undefined,
         numberOfDependents: manualDependents,
         dependentsCount: manualDependents,
       });
     }
-    showToast('Đã lưu thành công tất cả cấu hình & số người phụ thuộc!', 'success');
+    showToast('Đã lưu thành công tất cả cấu hình, lương & trợ cấp nhân viên!', 'success');
   };
 
   // Ref luôn giữ config mới nhất để commitAllowance không bị stale closure
@@ -402,6 +425,58 @@ export const SettingsTab: React.FC = () => {
           </div>
         </div>
 
+        {/* Section 2.5: Thiết lập Lương Cơ Bản & Lương Đóng Bảo Hiểm của nhân viên đang chọn */}
+        {manualEmp && (
+          <div className="px-4 py-2 bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-slate-50 dark:from-slate-900/90 dark:via-blue-950/30 dark:to-slate-900/80 border-t border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold shrink-0">
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 flex-wrap">
+                  <span>Cài đặt lương:</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-extrabold">{manualEmp.fullName}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 bg-slate-200 dark:bg-slate-700 rounded text-slate-700 dark:text-slate-300 font-semibold">{manualEmp.id} - {manualEmp.position}</span>
+                </div>
+                <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
+                  {isSuperAdmin ? 'Admin' : isVP ? 'VP' : isKHO ? 'KHO' : 'Quản lý'} có thể điền lương cơ bản và lương đóng BHXH riêng cho từng người
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-blue-300 dark:border-blue-700 shadow-2xs">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Lương CB cũ:</span>
+                <FormattedNumberInput
+                  value={manualBaseSalary}
+                  onChange={(v) => {
+                    setManualBaseSalary(v);
+                    if (manualEmp && updateEmployee) {
+                      updateEmployee({ ...manualEmp, baseSalary: v });
+                    }
+                  }}
+                  className="w-28 text-right px-1.5 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-blue-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-2.5 py-1 rounded-md border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 whitespace-nowrap">Lương CB mới (BHXH):</span>
+                <FormattedNumberInput
+                  value={manualInsuranceBaseSalary}
+                  onChange={(v) => {
+                    setManualInsuranceBaseSalary(v);
+                    if (manualEmp && updateEmployee) {
+                      updateEmployee({ ...manualEmp, insuranceBaseSalary: v > 0 ? v : undefined });
+                    }
+                  }}
+                  placeholder="= Lương CB cũ"
+                  className="w-32 text-right px-1.5 py-0.5 text-xs bg-slate-50 dark:bg-slate-900 border border-emerald-400 rounded text-slate-900 dark:text-slate-100 font-bold focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 3: Tham số hệ thống — 2 cột chia đường kẻ dọc */}
         <div className="px-4 py-2.5 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700">
           {/* Left: Định mức công chuẩn & hệ số OT + Nhập tay bổ sung */}
@@ -445,6 +520,41 @@ export const SettingsTab: React.FC = () => {
                 />
               </div>
             ))}
+
+            {/* EPCC (month-standard-days-display) — Hiển thị ngày công chuẩn phụ cấp
+                tự động từ chấm công: HC + Nghỉ hưởng lương + Nghỉ phép năm.
+                Chỉ hiển thị thông tin, không nhập tay (calculations luôn auto-tính). */}
+            <div className="pt-1.5 mt-1 border-t-2 border-amber-300 dark:border-amber-600">
+              {(() => {
+                const autoVal = currentManualPayslip
+                  ? Number((
+                      currentManualPayslip.hcDays +
+                      (currentManualPayslip.leavePaidDays || 0) +
+                      (currentManualPayslip.leaveAnnualDays || 0) +
+                      (currentManualPayslip.minWageLeaveDays || 0)
+                    ).toFixed(1))
+                  : config.standardWorkDaysPerMonth;
+                const stdDays = config.standardWorkDaysPerMonth || 26;
+                const ratio = stdDays > 0 ? autoVal / stdDays : 1;
+                const isOver100 = autoVal > stdDays;
+                return (
+                  <div className={`flex items-center justify-between gap-2 py-1 px-1.5 rounded border ${isOver100 ? 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'}`}>
+                    <div className="flex flex-col flex-1">
+                      <span className={`text-[11px] font-semibold leading-tight ${isOver100 ? 'text-green-800 dark:text-green-300' : 'text-amber-800 dark:text-amber-300'}`}>
+                        📅 Ngày công chuẩn phụ cấp (tự động)
+                        {isOver100 && <span className="ml-1 text-[9px] bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-1 rounded">+{(autoVal - stdDays).toFixed(1)} ngày</span>}
+                      </span>
+                      <span className={`text-[9px] leading-tight ${isOver100 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        HC({currentManualPayslip?.hcDays.toFixed(1) ?? 0}) + Lương({currentManualPayslip?.leavePaidDays ?? 0}) + Phép({currentManualPayslip?.leaveAnnualDays ?? 0}) = {autoVal} ngày → Hệ số: {(ratio * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <span className={`text-sm font-bold px-2 py-0.5 rounded ${isOver100 ? 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100' : 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100'}`}>
+                      {autoVal}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* Nhập tay chấm công & phép theo NV/Tháng — nối liền dưới hệ số OT, gỡ tiêu đề dư thừa theo yêu cầu */}
             <div className="pt-1.5 mt-1 border-t border-slate-200 dark:border-slate-700 space-y-0.5">

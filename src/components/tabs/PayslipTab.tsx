@@ -48,7 +48,7 @@ export const PayslipTab: React.FC = () => {
 
   // Lấy mã NV liên kết (từ profile hoặc email ảo mã NV)
   const linkedEmployeeId = authProfile?.employee_id ||
-    (em.endsWith('@imvina.com') ? em.replace('@imvina.com', '') : null) ||
+    (em.endsWith('@imvina.com') && !isVP && !isKHO ? em.replace('@imvina.com', '') : null) ||
     (em.endsWith('@noemail.local') && !isVP && !isKHO ? em.replace('@noemail.local', '') : null);
 
   let visibleEmployees = employees;
@@ -59,23 +59,25 @@ export const PayslipTab: React.FC = () => {
   } else if (isKHO) {
     visibleEmployees = employees.filter((emp) => ['Leader', 'Staff', 'OP'].includes(emp.position));
   } else if (linkedEmployeeId) {
-    // Nhân viên cá nhân: KHÓA CHẶT chỉ xem đúng chính mình
+    // Nhân viên cá nhân: KHÓA CHẶT chỉ xem đúng chính mình, TUYỆT ĐỐI không lộ người khác
     const myEmps = employees.filter((emp) => emp.id.toLowerCase() === linkedEmployeeId.toLowerCase());
-    visibleEmployees = myEmps.length > 0 ? myEmps : employees;
+    visibleEmployees = myEmps.length > 0 ? myEmps : (authProfile?.employee_id ? employees.filter((e) => e.id === authProfile.employee_id) : []);
   } else if (authProfile?.employee_id) {
     visibleEmployees = employees.filter((emp) => emp.id === authProfile.employee_id);
+  } else {
+    visibleEmployees = [];
   }
 
   useEffect(() => {
     if (!isSuperAdmin && !isVP && !isKHO && linkedEmployeeId) {
       const match = employees.find((e) => e.id.toLowerCase() === linkedEmployeeId.toLowerCase());
-      if (match) setSelectedEmpId(match.id);
+      if (match && selectedEmpId !== match.id) setSelectedEmpId(match.id);
     } else if (visibleEmployees.length > 0 && !visibleEmployees.find((e) => e.id === selectedEmpId)) {
       setSelectedEmpId(visibleEmployees[0].id);
     }
   }, [linkedEmployeeId, isSuperAdmin, isVP, isKHO, visibleEmployees, selectedEmpId, setSelectedEmpId, employees]);
 
-  const selectedEmp = employees.find((e) => e.id === selectedEmpId) || employees[0];
+  const selectedEmp = visibleEmployees.find((e) => e.id === selectedEmpId) || visibleEmployees[0] || employees[0];
 
   const attendanceKey = `${selectedEmpId}_${selectedYear}_${selectedMonth}`;
   const attendanceRecord = attendanceRecords[attendanceKey];
@@ -138,7 +140,7 @@ export const PayslipTab: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-0.5">
             Nhân viên
           </label>
-          {visibleEmployees.length <= 1 ? (
+          {!isSuperAdmin && !isVP && !isKHO || visibleEmployees.length <= 1 ? (
             <div className="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 min-w-[260px] flex items-center justify-between gap-2 shadow-inner">
               <span className="truncate">🔒 {selectedEmp.id} - {selectedEmp.fullName}</span>
               <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 rounded font-semibold shrink-0">
