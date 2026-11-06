@@ -6,6 +6,7 @@ import {
 import { usePayroll } from '../../context/PayrollContext';
 import { Employee, DailyAttendance } from '../../types/payroll';
 import { sortEmployeesByCode } from '../../utils/employeeUtils';
+import { getHolidayMap } from '../../utils/vietnameseHolidays';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 type ViewMode = 'manual' | 'table';
@@ -736,15 +737,21 @@ export const AttendanceTab: React.FC = () => {
 
   const monthDays = useMemo(() => {
     const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const holidayMap = getHolidayMap(selectedYear);
     return dayColumns.map((d) => {
       const date = new Date(selectedYear, selectedMonth - 1, d);
       const dayOfWeek = date.getDay();
+      const dateStr = `${selectedYear}-${pad2(selectedMonth)}-${pad2(d)}`;
+      const holiday = holidayMap.get(dateStr);
       return {
         day: d,
-        dateStr: `${selectedYear}-${pad2(selectedMonth)}-${pad2(d)}`,
+        dateStr,
         dayOfWeek,
         dayName: DAY_NAMES[dayOfWeek],
         isSunday: dayOfWeek === 0,
+        isHoliday: !!holiday,
+        holidayName: holiday?.name ?? '',
+        holidayShort: holiday?.shortName ?? '',
       };
     });
   }, [selectedYear, selectedMonth, dayColumns]);
@@ -1454,17 +1461,25 @@ export const AttendanceTab: React.FC = () => {
                     &nbsp;
                   </th>
 
-                  {/* Cột các ngày trong tháng: hiển thị M/D (8/1, 8/2...) nền xanh lá cho ngày thường, hồng cho Chủ Nhật */}
+                  {/* Cột các ngày trong tháng: Ngày Lễ → đỏ đậm, Chủ Nhật → hồng, ngày thường → xanh lá */}
                   {monthDays.map((d) => (
                     <th
                       key={`date-${d.dateStr}`}
+                      title={d.isHoliday ? d.holidayName : undefined}
                       className={`min-w-[34px] px-0.5 py-0.5 text-center font-bold text-[12px] border-r border-b border-dashed border-slate-400/80 leading-tight ${
-                        d.isSunday
+                        d.isHoliday
+                          ? 'bg-red-600 text-white dark:bg-red-700 dark:text-white'
+                          : d.isSunday
                           ? 'bg-[#ffcdd2] text-[#991b1b] dark:bg-[#7f1d1d] dark:text-[#fecaca]'
                           : 'bg-[#c8e6c9] text-[#134e4a] dark:bg-[#064e3b] dark:text-[#a7f3d0]'
                       }`}
                     >
                       {selectedMonth}/{d.day}
+                      {d.isHoliday && (
+                        <div className="text-[7px] leading-none mt-0.5 truncate max-w-[32px] font-normal opacity-90">
+                          {d.holidayShort}
+                        </div>
+                      )}
                     </th>
                   ))}
 
@@ -1478,10 +1493,12 @@ export const AttendanceTab: React.FC = () => {
                   {monthDays.map((d) => (
                     <th
                       key={`dayname-${d.dateStr}`}
-                      className={`min-w-[34px] px-0.5 py-0 text-center font-bold text-[11px] bg-[#e2e8f0] dark:bg-slate-700 border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${
-                        d.isSunday
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-slate-800 dark:text-slate-200'
+                      className={`min-w-[34px] px-0.5 py-0 text-center font-bold text-[11px] border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${
+                        d.isHoliday
+                          ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-black'
+                          : d.isSunday
+                          ? 'bg-[#e2e8f0] dark:bg-slate-700 text-red-600 dark:text-red-400'
+                          : 'bg-[#e2e8f0] dark:bg-slate-700 text-slate-800 dark:text-slate-200'
                       }`}
                     >
                       {d.dayName}
@@ -1527,7 +1544,11 @@ export const AttendanceTab: React.FC = () => {
                             <td
                               key={d.dateStr}
                               className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-bold' : ''
+                                d.isHoliday
+                                  ? 'bg-red-100/80 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-bold'
+                                  : d.isSunday
+                                  ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-bold'
+                                  : ''
                               }`}
                             >
                               {val > 0 ? cong.toFixed(1) : ''}
@@ -1552,7 +1573,11 @@ export const AttendanceTab: React.FC = () => {
                             <td
                               key={d.dateStr}
                               className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isSunday ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-bold' : ''
+                                d.isHoliday
+                                  ? 'bg-red-100/80 dark:bg-red-950/30 text-amber-700 dark:text-amber-300 font-bold'
+                                  : d.isSunday
+                                  ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-bold'
+                                  : ''
                               }`}
                             >
                               {val > 0 ? val.toFixed(1) : ''}
@@ -1577,7 +1602,11 @@ export const AttendanceTab: React.FC = () => {
                             <td
                               key={d.dateStr}
                               className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isSunday ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold' : ''
+                                d.isHoliday
+                                  ? 'bg-red-100/80 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
+                                  : d.isSunday
+                                  ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
+                                  : ''
                               }`}
                             >
                               {val > 0 ? val.toFixed(1) : ''}
