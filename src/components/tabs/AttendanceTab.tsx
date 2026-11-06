@@ -1475,11 +1475,6 @@ export const AttendanceTab: React.FC = () => {
                       }`}
                     >
                       {selectedMonth}/{d.day}
-                      {d.isHoliday && (
-                        <div className="text-[7px] leading-none mt-0.5 truncate max-w-[32px] font-normal opacity-90">
-                          {d.holidayShort}
-                        </div>
-                      )}
                     </th>
                   ))}
 
