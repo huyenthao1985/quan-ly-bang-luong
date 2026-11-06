@@ -756,6 +756,13 @@ export const AttendanceTab: React.FC = () => {
     });
   }, [selectedYear, selectedMonth, dayColumns]);
 
+  /** Danh sách ngày lễ trong tháng đang xem (để hiển thị ghi chú) */
+  const monthHolidays = useMemo(() => {
+    return monthDays
+      .filter((d) => d.isHoliday)
+      .map((d) => ({ label: `${selectedMonth}/${d.day} ${d.holidayName}` }));
+  }, [monthDays, selectedMonth]);
+
   /** Lấy giờ HC hoặc OT 150% ngày thường hoặc CN 200% của 1 nhân viên trong 1 ngày cụ thể */
   const getDayVal = (empId: string, dateStr: string, type: 'hc' | 'ot' | 'sunday'): number => {
     const rec = attendanceRecords[`${empId}_${selectedYear}_${selectedMonth}`];
@@ -1336,10 +1343,24 @@ export const AttendanceTab: React.FC = () => {
       {viewMode === 'table' && (
         <div className="space-y-[2mm] w-full">
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
-          <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
-            <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight">
+          <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-4 flex-wrap">
+            <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight shrink-0">
               Bảng nhập điểm danh &amp; Giờ làm việc chi tiết
             </h3>
+            {/* Ghi chú ngày nghỉ lễ trong tháng */}
+            {monthHolidays.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 shrink-0">🗓 Ngày lễ tháng này:</span>
+                {monthHolidays.map((h, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full leading-tight"
+                  >
+                    {h.label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="overflow-x-auto w-full">
             <table className="w-full text-xs border-collapse text-left min-w-full">
