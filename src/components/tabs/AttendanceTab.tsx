@@ -1493,7 +1493,7 @@ export const AttendanceTab: React.FC = () => {
                         </th>
                       ))}
 
-                      <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12.5px] font-bold">
+                      <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12.5px] font-bold border-l border-slate-300 dark:border-slate-700">
                         Tổng
                       </th>
                     </tr>
@@ -1564,7 +1564,7 @@ export const AttendanceTab: React.FC = () => {
                               );
                             })}
 
-                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-slate-300 dark:border-slate-700">
                               {(hcSum / 8).toFixed(1)}
                             </td>
                           </tr>
@@ -1592,7 +1592,7 @@ export const AttendanceTab: React.FC = () => {
                               );
                             })}
 
-                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-slate-300 dark:border-slate-700">
                               {otSum.toFixed(1)}
                             </td>
                           </tr>
@@ -1620,7 +1620,7 @@ export const AttendanceTab: React.FC = () => {
                               );
                             })}
 
-                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800 border-b-2 border-slate-400 dark:border-slate-700">
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-slate-300 dark:border-slate-700 border-b-2 border-slate-400 dark:border-slate-700">
                               {sunSum.toFixed(1)}
                             </td>
                           </tr>
