@@ -16,29 +16,29 @@ type OtType = 'none' | 'ot150' | 'sunday200' | 'holiday300';
 type SpecialDay = 'normal' | 'leavePaid' | 'leaveAnnual' | 'leaveUnpaid';
 
 const STATUS_OPTIONS = [
-  { value: 'present' as AttendanceStatus,   label: 'Có mặt (HC)',        color: '#22c55e' },
-  { value: 'ot' as AttendanceStatus,         label: 'OT 150%',            color: '#f59e0b' },
-  { value: 'sunday' as AttendanceStatus,     label: 'Chủ nhật 200%',      color: '#ef4444' },
-  { value: 'holiday' as AttendanceStatus,    label: 'Ngày lễ 300%',       color: '#a855f7' },
-  { value: 'night' as AttendanceStatus,      label: 'Ca đêm 30%',         color: '#6366f1' },
-  { value: 'absent_paid' as AttendanceStatus,    label: 'Nghỉ hưởng lương', color: '#64748b' },
-  { value: 'absent_annual' as AttendanceStatus,  label: 'Nghỉ phép năm',   color: '#0ea5e9' },
-  { value: 'absent_unpaid' as AttendanceStatus,  label: 'Nghỉ không lương', color: '#f43f5e' },
+  { value: 'present' as AttendanceStatus, label: 'Có mặt (HC)', color: '#22c55e' },
+  { value: 'ot' as AttendanceStatus, label: 'OT 150%', color: '#f59e0b' },
+  { value: 'sunday' as AttendanceStatus, label: 'Chủ nhật 200%', color: '#ef4444' },
+  { value: 'holiday' as AttendanceStatus, label: 'Ngày lễ 300%', color: '#a855f7' },
+  { value: 'night' as AttendanceStatus, label: 'Ca đêm 30%', color: '#6366f1' },
+  { value: 'absent_paid' as AttendanceStatus, label: 'Nghỉ hưởng lương', color: '#64748b' },
+  { value: 'absent_annual' as AttendanceStatus, label: 'Nghỉ phép năm', color: '#0ea5e9' },
+  { value: 'absent_unpaid' as AttendanceStatus, label: 'Nghỉ không lương', color: '#f43f5e' },
 ];
 const SHIFT_OPTIONS = [
-  { value: 'day' as ShiftType,   label: 'Ca ngày (8h)' },
+  { value: 'day' as ShiftType, label: 'Ca ngày (8h)' },
   { value: 'night' as ShiftType, label: 'Ca đêm (8h)' },
   { value: 'split' as ShiftType, label: 'Ca chia đôi (4h)' },
 ];
 const OT_OPTIONS = [
-  { value: 'none' as OtType,       label: 'Không' },
-  { value: 'ot150' as OtType,      label: 'OT 150%' },
-  { value: 'sunday200' as OtType,  label: 'Chủ nhật 200%' },
+  { value: 'none' as OtType, label: 'Không' },
+  { value: 'ot150' as OtType, label: 'OT 150%' },
+  { value: 'sunday200' as OtType, label: 'Chủ nhật 200%' },
   { value: 'holiday300' as OtType, label: 'Ngày lễ 300%' },
 ];
 const SPECIAL_OPTIONS = [
-  { value: 'normal' as SpecialDay,      label: 'Ngày thường' },
-  { value: 'leavePaid' as SpecialDay,   label: 'Nghỉ hưởng lương' },
+  { value: 'normal' as SpecialDay, label: 'Ngày thường' },
+  { value: 'leavePaid' as SpecialDay, label: 'Nghỉ hưởng lương' },
   { value: 'leaveAnnual' as SpecialDay, label: 'Nghỉ phép năm' },
   { value: 'leaveUnpaid' as SpecialDay, label: 'Nghỉ không lương' },
 ];
@@ -330,8 +330,8 @@ export const AttendanceTab: React.FC = () => {
   // Giờ kết thúc mặc định trước đây là 8:00 PM (ca ngày) / 7:30 AM (ca đêm), lệch với khung giờ
   // chuẩn dùng để tính HC/OT (calcHcHours/calcOtHours giả định ca ngày kết thúc 17:00, ca đêm 05:00).
   // Ca ngày mặc định: 7:30 AM → 5:00 PM | Ca đêm mặc định: 8:00 PM → 5:00 AM
-  const [sH, setSH] = useState(7);  const [sMin, setSMin] = useState(30); const [sAP, setSAP] = useState<'AM' | 'PM'>('AM');
-  const [eH, setEH] = useState(5);  const [eMin, setEMin] = useState(0);  const [eAP, setEAP] = useState<'AM' | 'PM'>('PM');
+  const [sH, setSH] = useState(7); const [sMin, setSMin] = useState(30); const [sAP, setSAP] = useState<'AM' | 'PM'>('AM');
+  const [eH, setEH] = useState(5); const [eMin, setEMin] = useState(0); const [eAP, setEAP] = useState<'AM' | 'PM'>('PM');
 
   const isCurrentDaySunday = useMemo(() => {
     return new Date(eYr, eMon - 1, eDay).getDay() === 0;
@@ -356,7 +356,7 @@ export const AttendanceTab: React.FC = () => {
   const [editDate, setEditDate] = useState('');
   const [editIsNight, setEditIsNight] = useState(false);
   const [editSH, setEditSH] = useState(7); const [editSMin, setEditSMin] = useState(30); const [editSAP, setEditSAP] = useState<'AM' | 'PM'>('AM');
-  const [editEH, setEditEH] = useState(5); const [editEMin, setEditEMin] = useState(0);  const [editEAP, setEditEAP] = useState<'AM' | 'PM'>('PM');
+  const [editEH, setEditEH] = useState(5); const [editEMin, setEditEMin] = useState(0); const [editEAP, setEditEAP] = useState<'AM' | 'PM'>('PM');
 
   const editHcAuto = useMemo(() => {
     const s = toDecHours(editSH, editSMin, editSAP);
@@ -397,15 +397,15 @@ export const AttendanceTab: React.FC = () => {
     if (!selEmpId) return;
     let initial = '';
     const isNight = (rec.nightHours || 0) > 0;
-    if (field === 'shift')    initial = isNight ? 'night' : 'day';
-    if (field === 'checkIn')  initial = rec.checkIn  || (isNight ? '20:00' : '07:30');
+    if (field === 'shift') initial = isNight ? 'night' : 'day';
+    if (field === 'checkIn') initial = rec.checkIn || (isNight ? '20:00' : '07:30');
     if (field === 'checkOut') initial = rec.checkOut || (isNight ? '05:00' : '17:00');
-    if (field === 'hcHours')  initial = (rec.hcHours  || 0).toString();
+    if (field === 'hcHours') initial = (rec.hcHours || 0).toString();
     if (field === 'otHours') {
       let otVal = rec.otHours || 0;
       if (isNight && rec.checkIn && rec.checkOut) {
-        const s = parseTime24(rec.checkIn);  const startD = toDecHours(s.h, s.m, s.ampm);
-        const e = parseTime24(rec.checkOut); const endD   = toDecHours(e.h, e.m, e.ampm);
+        const s = parseTime24(rec.checkIn); const startD = toDecHours(s.h, s.m, s.ampm);
+        const e = parseTime24(rec.checkOut); const endD = toDecHours(e.h, e.m, e.ampm);
         const pc50 = calcNightAllowance50(startD, endD);
         if (otVal === pc50) {
           otVal = calcOtHours(startD, endD);
@@ -427,14 +427,14 @@ export const AttendanceTab: React.FC = () => {
     if (field === 'shift') {
       const isNight = cellVal === 'night';
       // Khi đổi ca → tính lại HC/OT từ giờ vào-ra hiện tại
-      const inStr  = rec.checkIn  || (isNight ? '20:00' : '07:30');
+      const inStr = rec.checkIn || (isNight ? '20:00' : '07:30');
       const outStr = rec.checkOut || (isNight ? '05:00' : '17:00');
-      const s = parseTime24(inStr);  const startD = toDecHours(s.h, s.m, s.ampm);
-      const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
+      const s = parseTime24(inStr); const startD = toDecHours(s.h, s.m, s.ampm);
+      const e = parseTime24(outStr); const endD = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
       const ot = calcOtHours(startD, endD);
       // EPCC (night-shift-ot-fix) - Ca đêm: nightHours là PC 30% (22:00-05:00), otHours là số giờ tăng ca thực tế (calcOtHours)
-      updateAttendanceDay(selEmpId, rec.date, 'nightHours',  isNight ? calcNightAllowance30(startD, endD) : 0);
+      updateAttendanceDay(selEmpId, rec.date, 'nightHours', isNight ? calcNightAllowance30(startD, endD) : 0);
       if (isSun) {
         updateAttendanceDay(selEmpId, rec.date, 'hcHours', 0);
         updateAttendanceDay(selEmpId, rec.date, 'otHours', 0);
@@ -447,11 +447,11 @@ export const AttendanceTab: React.FC = () => {
     } else if (field === 'checkIn' || field === 'checkOut') {
       // Lưu giờ vào/ra mới và tính lại HC (+ PC đêm 30% nếu là ca đêm)
       const isNight = (rec.nightHours || 0) > 0;
-      const inStr  = field === 'checkIn'  ? cellVal : (rec.checkIn  || (isNight ? '20:00' : '07:30'));
+      const inStr = field === 'checkIn' ? cellVal : (rec.checkIn || (isNight ? '20:00' : '07:30'));
       const outStr = field === 'checkOut' ? cellVal : (rec.checkOut || (isNight ? '05:00' : '17:00'));
       updateAttendanceDay(selEmpId, rec.date, field, cellVal);
-      const s = parseTime24(inStr);  const startD = toDecHours(s.h, s.m, s.ampm);
-      const e = parseTime24(outStr); const endD   = toDecHours(e.h, e.m, e.ampm);
+      const s = parseTime24(inStr); const startD = toDecHours(s.h, s.m, s.ampm);
+      const e = parseTime24(outStr); const endD = toDecHours(e.h, e.m, e.ampm);
       const hc = calcHcHours(startD, endD);
       const ot = calcOtHours(startD, endD);
       if (isSun) {
@@ -553,7 +553,7 @@ export const AttendanceTab: React.FC = () => {
       updateAttendanceDay(selEmpId, dateKey, 'nightHours', nightH);
       updateAttendanceDay(selEmpId, dateKey, 'holidayHours', rec.holidayHours || 0);
       updateAttendanceDay(selEmpId, dateKey, 'isManual', true);
-      updateAttendanceDay(selEmpId, dateKey, 'checkIn',  fmtTime24(editSH, editSMin, editSAP));
+      updateAttendanceDay(selEmpId, dateKey, 'checkIn', fmtTime24(editSH, editSMin, editSAP));
       updateAttendanceDay(selEmpId, dateKey, 'checkOut', fmtTime24(editEH, editEMin, editEAP));
     };
 
@@ -665,22 +665,22 @@ export const AttendanceTab: React.FC = () => {
       }
     }
 
-    if (status === 'absent_paid'   || specialDay === 'leavePaid')   lpD = 1;
+    if (status === 'absent_paid' || specialDay === 'leavePaid') lpD = 1;
     if (status === 'absent_annual' || specialDay === 'leaveAnnual') laD = 1;
     if (status === 'absent_unpaid' || specialDay === 'leaveUnpaid') luD = 1;
 
-    updateAttendanceDay(selEmpId, ds, 'hcHours',        hcH);
-    updateAttendanceDay(selEmpId, ds, 'otHours',        otH);
-    updateAttendanceDay(selEmpId, ds, 'nightHours',     nightH);
-    updateAttendanceDay(selEmpId, ds, 'sundayHours',    sunH);
-    updateAttendanceDay(selEmpId, ds, 'holidayHours',   holH);
-    updateAttendanceDay(selEmpId, ds, 'leavePaidDays',  lpD);
+    updateAttendanceDay(selEmpId, ds, 'hcHours', hcH);
+    updateAttendanceDay(selEmpId, ds, 'otHours', otH);
+    updateAttendanceDay(selEmpId, ds, 'nightHours', nightH);
+    updateAttendanceDay(selEmpId, ds, 'sundayHours', sunH);
+    updateAttendanceDay(selEmpId, ds, 'holidayHours', holH);
+    updateAttendanceDay(selEmpId, ds, 'leavePaidDays', lpD);
     updateAttendanceDay(selEmpId, ds, 'leaveAnnualDays', laD);
     updateAttendanceDay(selEmpId, ds, 'leaveUnpaidDays', luD);
-    updateAttendanceDay(selEmpId, ds, 'isManual',       true);
+    updateAttendanceDay(selEmpId, ds, 'isManual', true);
     // EPCC (checkin-checkout-not-persisted) - FIX ROOT CAUSE "Giờ vào/ra trong bảng không khớp lúc nhập Manual":
     // Lưu giờ vào/ra thực tế đã chọn để bảng "Điểm danh gần đây" hiển thị đúng giờ đã nhập.
-    updateAttendanceDay(selEmpId, ds, 'checkIn',  fmtTime24(sH, sMin, sAP));
+    updateAttendanceDay(selEmpId, ds, 'checkIn', fmtTime24(sH, sMin, sAP));
     updateAttendanceDay(selEmpId, ds, 'checkOut', fmtTime24(eH, eMin, eAP));
 
     const nm = employees.find(e => e.id === selEmpId)?.fullName;
@@ -704,12 +704,12 @@ export const AttendanceTab: React.FC = () => {
     setShift(newShift);
     if (newShift === 'night') {
       // Ca đêm: bắt đầu 8:00 PM, kết thúc chuẩn 5:00 AM
-      setSH(8);  setSMin(0);  setSAP('PM');
-      setEH(5);  setEMin(0);  setEAP('AM');
+      setSH(8); setSMin(0); setSAP('PM');
+      setEH(5); setEMin(0); setEAP('AM');
     } else {
       // Ca ngày / chia đôi: bắt đầu 7:30 AM, kết thúc chuẩn 5:00 PM
-      setSH(7);  setSMin(30); setSAP('AM');
-      setEH(5);  setEMin(0);  setEAP('PM');
+      setSH(7); setSMin(30); setSAP('AM');
+      setEH(5); setEMin(0); setEAP('PM');
     }
   };
 
@@ -911,13 +911,12 @@ export const AttendanceTab: React.FC = () => {
                   <label className="block text-[10px] font-bold text-red-500 mb-0.5">● Nhân viên</label>
                   <div className="relative">
                     <select value={selEmpId} onChange={e => setSelEmpId(e.target.value)}
-                      className={`w-full h-[32px] appearance-none pl-2.5 pr-6 text-xs border rounded-md font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${
-                        saveAttempted && !selEmpId
+                      className={`w-full h-[32px] appearance-none pl-2.5 pr-6 text-xs border rounded-md font-semibold cursor-pointer focus:outline-none bg-yellow-50 dark:bg-yellow-950/30 ${saveAttempted && !selEmpId
                           ? 'border-red-500 ring-2 ring-red-300 dark:ring-red-800 text-slate-400'
                           : selEmpId
                             ? 'border-yellow-400 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-yellow-400'
                             : 'border-yellow-300 text-slate-400 focus:ring-2 focus:ring-yellow-400'
-                      }`}>
+                        }`}>
                       <option value="">Chọn nhân viên</option>
                       {employees.map(e => (
                         <option key={e.id} value={e.id}>[{e.id}] {e.fullName} – {e.department}</option>
@@ -982,11 +981,10 @@ export const AttendanceTab: React.FC = () => {
                   <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">
                     {isCurrentDaySunday ? 'HC (Chủ nhật 200%)' : 'HC (h)'}
                   </label>
-                  <div className={`h-[32px] px-2 rounded-md font-bold text-xs flex items-center justify-between border ${
-                    isCurrentDaySunday
+                  <div className={`h-[32px] px-2 rounded-md font-bold text-xs flex items-center justify-between border ${isCurrentDaySunday
                       ? 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
                       : 'bg-green-50 dark:bg-green-950/30 border-green-400 dark:border-green-600 text-green-800 dark:text-green-300'
-                  }`}>
+                    }`}>
                     <span>{isCurrentDaySunday ? '0.0' : (hcAuto % 1 === 0 ? hcAuto.toFixed(1) : hcAuto)}</span>
                     <span className={`text-[9px] font-normal ${isCurrentDaySunday ? 'text-red-500 font-semibold' : 'text-green-600/70'}`}>
                       {isCurrentDaySunday ? '(Chủ nhật tính 200%)' : `(= ${(hcAuto / 8).toFixed(3)} công)`}
@@ -1002,20 +1000,18 @@ export const AttendanceTab: React.FC = () => {
                     const sunDisplay = hcAuto + rawOt;
                     const valToDisplay = isCurrentDaySunday ? sunDisplay : otAuto;
                     return (
-                      <div className={`h-[32px] px-2.5 rounded-md font-bold text-xs flex items-center justify-between border ${
-                        valToDisplay > 0
+                      <div className={`h-[32px] px-2.5 rounded-md font-bold text-xs flex items-center justify-between border ${valToDisplay > 0
                           ? (isCurrentDaySunday
-                              ? 'bg-red-50 dark:bg-red-950/30 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300'
-                              : 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300')
+                            ? 'bg-red-50 dark:bg-red-950/30 border-red-400 dark:border-red-600 text-red-800 dark:text-red-300'
+                            : 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-600 text-amber-800 dark:text-amber-300')
                           : 'bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-slate-400'
-                      }`}>
+                        }`}>
                         <span>{valToDisplay.toFixed(1)}</span>
                         {valToDisplay > 0 && (
-                          <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${
-                            isCurrentDaySunday
+                          <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${isCurrentDaySunday
                               ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100'
                               : 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100'
-                          }`}>
+                            }`}>
                             {isCurrentDaySunday ? 'CN 200%' : (shift === 'night' ? 'Đêm' : 'OT')}
                           </span>
                         )}
@@ -1057,7 +1053,7 @@ export const AttendanceTab: React.FC = () => {
                         bảng "Danh sách điểm danh gần đây", đặt giữa "OT (h)"
                         và "Thao tác" — cùng nguồn dữ liệu và ý nghĩa với 2 cột
                         "Đêm 30%"/"Đêm 50%" ở bảng tổng hợp phía dưới. */}
-                    {['Ngày','Mã NV','Họ tên','Vị trí','Ca làm','Trạng thái','Giờ vào','Giờ ra','HC (h)','OT (h)','PC Đêm 30%','PC Đêm 50%','Thao tác']
+                    {['Ngày', 'Mã NV', 'Họ tên', 'Vị trí', 'Ca làm', 'Trạng thái', 'Giờ vào', 'Giờ ra', 'HC (h)', 'OT (h)', 'PC Đêm 30%', 'PC Đêm 50%', 'Thao tác']
                       .map(h => <th key={h} className="py-2 px-3 text-left">{h}</th>)}
                   </tr>
                 </thead>
@@ -1073,10 +1069,10 @@ export const AttendanceTab: React.FC = () => {
                   ) : recentRecs.map((rec) => {
                     const emp = employees.find(e => e.id === selEmpId);
                     const isNightRow = (rec.nightHours || 0) > 0;
-                    const pcIn  = parseTime24(rec.checkIn  || (isNightRow ? '20:00' : '07:30'));
+                    const pcIn = parseTime24(rec.checkIn || (isNightRow ? '20:00' : '07:30'));
                     const pcOut = parseTime24(rec.checkOut || (isNightRow ? '05:00' : '17:00'));
                     const pcStartDec = toDecHours(pcIn.h, pcIn.m, pcIn.ampm);
-                    const pcEndDec   = toDecHours(pcOut.h, pcOut.m, pcOut.ampm);
+                    const pcEndDec = toDecHours(pcOut.h, pcOut.m, pcOut.ampm);
                     const pc30 = isNightRow ? calcNightAllowance30(pcStartDec, pcEndDec) : 0;
                     const pc50 = isNightRow ? calcNightAllowance50(pcStartDec, pcEndDec) : 0;
                     let displayOt = rec.otHours || 0;
@@ -1126,10 +1122,10 @@ export const AttendanceTab: React.FC = () => {
                         {(() => {
                           const statusBadge = isSundayRec ? badge('Chủ nhật 200%', 'bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold')
                             : rec.hcHours > 0 ? badge('Có mặt', 'bg-green-100 dark:bg-green-950/40 text-green-700 dark:text-green-300')
-                            : rec.leavePaidDays > 0 ? badge('Nghỉ lương', 'bg-blue-100 text-blue-700')
-                            : rec.leaveAnnualDays > 0 ? badge('Nghỉ phép', 'bg-sky-100 text-sky-700')
-                            : rec.sundayHours > 0 ? badge('Chủ nhật 200%', 'bg-red-100 text-red-700 font-bold')
-                            : badge('–', 'bg-slate-100 text-slate-500');
+                              : rec.leavePaidDays > 0 ? badge('Nghỉ lương', 'bg-blue-100 text-blue-700')
+                                : rec.leaveAnnualDays > 0 ? badge('Nghỉ phép', 'bg-sky-100 text-sky-700')
+                                  : rec.sundayHours > 0 ? badge('Chủ nhật 200%', 'bg-red-100 text-red-700 font-bold')
+                                    : badge('–', 'bg-slate-100 text-slate-500');
                           if (!isEditing) {
                             // Helpers để render ô có thể click-to-edit
                             const isCellActive = (field: CellField) =>
@@ -1342,307 +1338,301 @@ export const AttendanceTab: React.FC = () => {
       {/* ══════════ TABLE MODE ══════════ */}
       {viewMode === 'table' && (
         <div className="space-y-[2mm] w-full">
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
-          <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-4 flex-wrap">
-            <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight shrink-0">
-              Bảng nhập điểm danh &amp; Giờ làm việc chi tiết
-            </h3>
-            {/* Ghi chú ngày nghỉ lễ trong tháng */}
-            {monthHolidays.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 shrink-0">🗓 Ngày lễ tháng này:</span>
-                {monthHolidays.map((h, i) => (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 bg-red-600 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full leading-tight"
-                  >
-                    {h.label}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-xs border-collapse text-left min-w-full">
-              <thead className="bg-[#122842] text-white uppercase text-[12.5px] font-bold">
-                <tr>
-                  <th className="py-1 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-10 w-20 text-[12.5px]">Mã NV</th>
-                  <th className="py-1 px-2 border-r border-slate-700/60 sticky left-20 bg-[#122842] z-10 w-[180px] max-w-[180px] text-[12.5px]">Họ tên</th>
-                  {[['HC (Công)',''],['OT 150%',''],['Đêm 30%',''],['Đêm 50%',''],['CN 200%',''],['Lễ 300%',''],['Nghỉ Lương',''],['Nghỉ Phép',''],['Nghỉ Không Lương',''],['Chuyên Cần','']].map(([h]) => (
-                    <th key={h} className="py-1 px-1 border-r border-slate-700/60 text-center w-24 text-[12.5px]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 text-slate-800 dark:text-slate-200 font-medium">
-                {filteredEmps.map(emp => {
-                  const rec = attendanceRecords[`${emp.id}_${selectedYear}_${selectedMonth}`];
-                  let tHc = 0, tOt = 0, tNightOt = 0, tN = 0, tSun = 0, tHol = 0, tLp = 0, tLa = 0, tLu = 0;
-                  if (rec?.dailyRecords) (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
-                    const parts = d.date?.split('-').map(Number);
-                    const isSunday = parts && parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
+                <div className="py-1 px-3 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center gap-4 flex-wrap">
+                  <h3 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider leading-tight shrink-0">
+                    Bảng nhập điểm danh &amp; Giờ làm việc chi tiết
+                  </h3>
+                  {/* Ghi chú ngày nghỉ lễ trong tháng */}
+                  {monthHolidays.length > 0 && (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300 shrink-0">🗓 Ngày lễ tháng này:</span>
+                      {monthHolidays.map((h, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 bg-red-600 text-white text-[13px] font-bold px-3 py-1 rounded-full leading-tight"
+                        >
+                          {h.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full text-xs border-collapse text-left min-w-full">
+                    <thead className="bg-[#122842] text-white uppercase text-[12.5px] font-bold">
+                      <tr>
+                        <th className="py-1 px-2 border-r border-slate-700/60 sticky left-0 bg-[#122842] z-10 w-20 text-[12.5px]">Mã NV</th>
+                        <th className="py-1 px-2 border-r border-slate-700/60 sticky left-20 bg-[#122842] z-10 w-[180px] max-w-[180px] text-[12.5px]">Họ tên</th>
+                        {[['HC (Công)', ''], ['OT 150%', ''], ['Đêm 30%', ''], ['Đêm 50%', ''], ['CN 200%', ''], ['Lễ 300%', ''], ['Nghỉ Lương', ''], ['Nghỉ Phép', ''], ['Nghỉ Không Lương', ''], ['Chuyên Cần', '']].map(([h]) => (
+                          <th key={h} className="py-1 px-1 border-r border-slate-700/60 text-center w-24 text-[12.5px]">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700/60 text-slate-800 dark:text-slate-200 font-medium">
+                      {filteredEmps.map(emp => {
+                        const rec = attendanceRecords[`${emp.id}_${selectedYear}_${selectedMonth}`];
+                        let tHc = 0, tOt = 0, tNightOt = 0, tN = 0, tSun = 0, tHol = 0, tLp = 0, tLa = 0, tLu = 0;
+                        if (rec?.dailyRecords) (Object.values(rec.dailyRecords) as DailyAttendance[]).forEach(d => {
+                          const parts = d.date?.split('-').map(Number);
+                          const isSunday = parts && parts.length === 3 && new Date(parts[0], parts[1] - 1, parts[2]).getDay() === 0;
 
-                    let dayHc = d.hcHours || 0;
-                    let dayOt = d.otHours || 0;
-                    let daySun = d.sundayHours || 0;
+                          let dayHc = d.hcHours || 0;
+                          let dayOt = d.otHours || 0;
+                          let daySun = d.sundayHours || 0;
 
-                    if (isSunday) {
-                      // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200% (CN 200%), KHÔNG tính HC công
-                      daySun = (daySun > 0 ? daySun : 0) + (dayHc > 0 ? dayHc : 0) + (dayOt > 0 ? dayOt : 0);
-                      dayHc = 0;
-                      dayOt = 0;
-                    } else if ((d.nightHours || 0) > 0) {
-                      const dIn  = parseTime24(d.checkIn  || '20:00');
-                      const dOut = parseTime24(d.checkOut || '05:00');
-                      const dStartDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
-                      const dEndDec   = toDecHours(dOut.h, dOut.m, dOut.ampm);
-                      tN += calcNightAllowance30(dStartDec, dEndDec);
-                      const pc50 = calcNightAllowance50(dStartDec, dEndDec);
-                      tNightOt += pc50;
-                      if (dayOt === pc50 || (d.checkIn && d.checkOut)) {
-                        dayOt = calcOtHours(dStartDec, dEndDec);
-                      }
-                    }
-                    tHc += dayHc;
-                    tOt += dayOt;
-                    tSun += daySun;
-                    tHol += d.holidayHours || 0;
-                    tLp += d.leavePaidDays || 0;
-                    tLa += d.leaveAnnualDays || 0;
-                    // Nghỉ không lương: dùng để Bảng lương xét điều kiện phụ cấp chuyên cần
-                    // (thường chỉ áp dụng khi không có ngày nghỉ không lương nào trong kỳ).
-                    tLu += d.leaveUnpaidDays || 0;
-                  });
-                  // EPCC (attendance-summary-plain-numbers) — theo yêu cầu: bỏ các ô "hộp"
-                  // (input có nền màu + viền bo góc) ở dải cột HC (Công) → Chuyên Cần trong
-                  // bảng tổng hợp này, chỉ còn hiển thị CHỮ SỐ thuần (căn giữa, không nền/viền).
-                  // Giá trị = 0 sẽ ẩn hẳn (chuỗi rỗng) thay vì hiện số 0, đúng yêu cầu "chỉ hiển
-                  // thị số > 0". Lưu ý: bảng này KHÔNG còn sửa trực tiếp được nữa (trước đây
-                  // mk()/mkHcCong() là input onChange ghi đè cả tháng) — muốn sửa dữ liệu, dùng
-                  // "Ma trận ngày HC/OT theo nhân viên" ngay bên dưới (sửa theo từng ngày).
-                  const fmt = (n: number) => {
-                    if (!n) return '';
-                    return Number.isInteger(n) ? String(n) : n.toFixed(1);
-                  };
-                  const cell = (val: number, cls: string) => (
-                    <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${cls}`}>{fmt(val)}</span>
-                  );
-                  const hcCong = Math.round((tHc / 8) * 2) / 2;
-                  return (
-                    <tr key={emp.id} className="h-[22px] hover:bg-blue-50/40 dark:hover:bg-slate-700/40">
-                      <td className="h-[22px] py-[2px] px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight whitespace-nowrap text-[12.5px]">{emp.id}</td>
-                      <td className="h-[22px] py-[2px] px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">{emp.fullName}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(hcCong,'text-slate-800 dark:text-slate-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tOt,'text-amber-900 dark:text-amber-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tN,'text-indigo-900 dark:text-indigo-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tNightOt,'text-violet-900 dark:text-violet-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tSun,'text-red-900 dark:text-red-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tHol,'text-purple-900 dark:text-purple-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLp,'text-slate-800 dark:text-slate-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLa,'text-slate-800 dark:text-slate-200')}</td>
-                      <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLu,'text-rose-900 dark:text-rose-200')}</td>
-                      {(() => {
-                        // Lấy số phép bù còn lại từ Hồ sơ nhân viên (EmployeeProfilesTab →
-                        // field Employee.compLeaveBalance) để xét điều kiện chuyên cần chính xác.
-                        const cc = checkChuyenCanEligible(tLu, emp.compLeaveBalance || 0);
-                        return (
-                          <td className="h-[22px] py-[2px] px-1 text-center" title={cc.reason}>
-                            <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${
-                              cc.eligible
-                                ? 'text-emerald-700 dark:text-emerald-300'
-                                : 'text-red-700 dark:text-red-300'
-                            }`}>
-                              {cc.eligible ? 'Đạt' : `Không đạt (${cc.suggestedUnauthorizedAbsenceDays})`}
-                            </span>
-                          </td>
+                          if (isSunday) {
+                            // EPCC (sunday-work-200-percent-no-hc-day): Toàn bộ giờ làm Chủ Nhật tính 200% (CN 200%), KHÔNG tính HC công
+                            daySun = (daySun > 0 ? daySun : 0) + (dayHc > 0 ? dayHc : 0) + (dayOt > 0 ? dayOt : 0);
+                            dayHc = 0;
+                            dayOt = 0;
+                          } else if ((d.nightHours || 0) > 0) {
+                            const dIn = parseTime24(d.checkIn || '20:00');
+                            const dOut = parseTime24(d.checkOut || '05:00');
+                            const dStartDec = toDecHours(dIn.h, dIn.m, dIn.ampm);
+                            const dEndDec = toDecHours(dOut.h, dOut.m, dOut.ampm);
+                            tN += calcNightAllowance30(dStartDec, dEndDec);
+                            const pc50 = calcNightAllowance50(dStartDec, dEndDec);
+                            tNightOt += pc50;
+                            if (dayOt === pc50 || (d.checkIn && d.checkOut)) {
+                              dayOt = calcOtHours(dStartDec, dEndDec);
+                            }
+                          }
+                          tHc += dayHc;
+                          tOt += dayOt;
+                          tSun += daySun;
+                          tHol += d.holidayHours || 0;
+                          tLp += d.leavePaidDays || 0;
+                          tLa += d.leaveAnnualDays || 0;
+                          // Nghỉ không lương: dùng để Bảng lương xét điều kiện phụ cấp chuyên cần
+                          // (thường chỉ áp dụng khi không có ngày nghỉ không lương nào trong kỳ).
+                          tLu += d.leaveUnpaidDays || 0;
+                        });
+                        // EPCC (attendance-summary-plain-numbers) — theo yêu cầu: bỏ các ô "hộp"
+                        // (input có nền màu + viền bo góc) ở dải cột HC (Công) → Chuyên Cần trong
+                        // bảng tổng hợp này, chỉ còn hiển thị CHỮ SỐ thuần (căn giữa, không nền/viền).
+                        // Giá trị = 0 sẽ ẩn hẳn (chuỗi rỗng) thay vì hiện số 0, đúng yêu cầu "chỉ hiển
+                        // thị số > 0". Lưu ý: bảng này KHÔNG còn sửa trực tiếp được nữa (trước đây
+                        // mk()/mkHcCong() là input onChange ghi đè cả tháng) — muốn sửa dữ liệu, dùng
+                        // "Ma trận ngày HC/OT theo nhân viên" ngay bên dưới (sửa theo từng ngày).
+                        const fmt = (n: number) => {
+                          if (!n) return '';
+                          return Number.isInteger(n) ? String(n) : n.toFixed(1);
+                        };
+                        const cell = (val: number, cls: string) => (
+                          <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${cls}`}>{fmt(val)}</span>
                         );
-                      })()}
+                        const hcCong = Math.round((tHc / 8) * 2) / 2;
+                        return (
+                          <tr key={emp.id} className="h-[22px] hover:bg-blue-50/40 dark:hover:bg-slate-700/40">
+                            <td className="h-[22px] py-[2px] px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight whitespace-nowrap text-[12.5px]">{emp.id}</td>
+                            <td className="h-[22px] py-[2px] px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-slate-200 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">{emp.fullName}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(hcCong, 'text-slate-800 dark:text-slate-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tOt, 'text-amber-900 dark:text-amber-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tN, 'text-indigo-900 dark:text-indigo-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tNightOt, 'text-violet-900 dark:text-violet-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tSun, 'text-red-900 dark:text-red-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tHol, 'text-purple-900 dark:text-purple-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLp, 'text-slate-800 dark:text-slate-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLa, 'text-slate-800 dark:text-slate-200')}</td>
+                            <td className="h-[22px] py-[2px] px-1 text-center border-r border-slate-200 dark:border-slate-700">{cell(tLu, 'text-rose-900 dark:text-rose-200')}</td>
+                            {(() => {
+                              // Lấy số phép bù còn lại từ Hồ sơ nhân viên (EmployeeProfilesTab →
+                              // field Employee.compLeaveBalance) để xét điều kiện chuyên cần chính xác.
+                              const cc = checkChuyenCanEligible(tLu, emp.compLeaveBalance || 0);
+                              return (
+                                <td className="h-[22px] py-[2px] px-1 text-center" title={cc.reason}>
+                                  <span className={`inline-block w-full text-center font-semibold text-[12px] leading-tight ${cc.eligible
+                                      ? 'text-emerald-700 dark:text-emerald-300'
+                                      : 'text-red-700 dark:text-red-300'
+                                    }`}>
+                                    {cc.eligible ? 'Đạt' : `Không đạt (${cc.suggestedUnauthorizedAbsenceDays})`}
+                                  </span>
+                                </td>
+                              );
+                            })()}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+            </div>
+
+            {/* ── Ma trận ngày HC/OT theo nhân viên ── */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
+              <div ref={matrixScrollRef} className="overflow-x-auto max-h-[70vh] overflow-y-auto scroll-smooth w-full">
+                <table className="border-collapse text-left text-xs w-full min-w-full">
+                  <thead className="sticky top-0 z-20 text-xs shadow-sm">
+                    {/* Dòng 1: M/D (8/1, 8/2, ...) theo định dạng tham chiếu ảnh 1 */}
+                    <tr className="bg-[#122842] text-white">
+                      <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle uppercase text-[12.5px] font-bold">
+                        Mã NV
+                      </th>
+                      <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[12.5px] font-bold">
+                        Họ Tên
+                      </th>
+                      {/* Freeze pane boundary — bỏ chữ Loại giờ theo yêu cầu (gạch đỏ) */}
+                      <th rowSpan={2} className="py-1 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[12.5px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
+                        &nbsp;
+                      </th>
+
+                      {/* Cột các ngày trong tháng: Ngày Lễ → đỏ đậm, Chủ Nhật → hồng, ngày thường → xanh lá */}
+                      {monthDays.map((d) => (
+                        <th
+                          key={`date-${d.dateStr}`}
+                          title={d.isHoliday ? d.holidayName : undefined}
+                          className={`min-w-[34px] px-0.5 py-0.5 text-center font-bold text-[12px] border-r border-b border-dashed border-slate-400/80 leading-tight ${d.isHoliday
+                              ? 'bg-red-600 text-white dark:bg-red-700 dark:text-white'
+                              : d.isSunday
+                                ? 'bg-[#ffcdd2] text-[#991b1b] dark:bg-[#7f1d1d] dark:text-[#fecaca]'
+                                : 'bg-[#c8e6c9] text-[#134e4a] dark:bg-[#064e3b] dark:text-[#a7f3d0]'
+                            }`}
+                        >
+                          {selectedMonth}/{d.day}
+                        </th>
+                      ))}
+
+                      <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12.5px] font-bold">
+                        Tổng
+                      </th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+                    {/* Dòng 2: Thứ trong tuần (Sat, Sun, Mon, Tue, Wed, Thu, Fri...) theo định dạng tham chiếu ảnh 1 */}
+                    <tr>
+                      {monthDays.map((d) => (
+                        <th
+                          key={`dayname-${d.dateStr}`}
+                          className={`min-w-[34px] px-0.5 py-0 text-center font-bold text-[11px] border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${d.isHoliday
+                              ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-black'
+                              : d.isSunday
+                                ? 'bg-[#e2e8f0] dark:bg-slate-700 text-red-600 dark:text-red-400'
+                                : 'bg-[#e2e8f0] dark:bg-slate-700 text-slate-800 dark:text-slate-200'
+                            }`}
+                        >
+                          {d.dayName}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-300 dark:divide-slate-700 text-slate-800 dark:text-slate-200 font-medium">
+                    {filteredEmps.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
+                          Không tìm thấy nhân viên phù hợp.
+                        </td>
+                      </tr>
+                    ) : filteredEmps.map((emp) => {
+                      let hcSum = 0;
+                      let otSum = 0;
+                      let sunSum = 0;
+                      monthDays.forEach((d) => {
+                        hcSum += getDayVal(emp.id, d.dateStr, 'hc');
+                        otSum += getDayVal(emp.id, d.dateStr, 'ot');
+                        sunSum += getDayVal(emp.id, d.dateStr, 'sunday');
+                      });
+
+                      return (
+                        <React.Fragment key={emp.id}>
+                          {/* HC Row */}
+                          <tr className="h-[22px] hover:bg-blue-50/30 dark:hover:bg-slate-700/30">
+                            <td rowSpan={3} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight text-[12.5px]">
+                              {emp.id}
+                            </td>
+                            <td rowSpan={3} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">
+                              {emp.fullName}
+                            </td>
+                            <td className="h-[22px] py-[2px] px-1 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap leading-tight">
+                              <span className="text-[11.5px] text-black dark:text-white font-bold">HC</span> <span className="text-[10.5px] font-normal text-black dark:text-slate-300">(Công)</span>
+                            </td>
+
+                            {monthDays.map((d) => {
+                              const val = getDayVal(emp.id, d.dateStr, 'hc');
+                              const cong = val / 8; // Quy đổi HC sang đơn vị Công (8h = 1 công)
+                              return (
+                                <td
+                                  key={d.dateStr}
+                                  className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${d.isHoliday
+                                      ? 'bg-red-100/80 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-bold'
+                                      : d.isSunday
+                                        ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-bold'
+                                        : ''
+                                    }`}
+                                >
+                                  {val > 0 ? cong.toFixed(1) : ''}
+                                </td>
+                              );
+                            })}
+
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                              {(hcSum / 8).toFixed(1)}
+                            </td>
+                          </tr>
+
+                          {/* OT 150% Row */}
+                          <tr className="h-[22px] hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
+                            <td className="h-[22px] py-[2px] px-1 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
+                              OT
+                            </td>
+
+                            {monthDays.map((d) => {
+                              const val = getDayVal(emp.id, d.dateStr, 'ot');
+                              return (
+                                <td
+                                  key={d.dateStr}
+                                  className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${d.isHoliday
+                                      ? 'bg-red-100/80 dark:bg-red-950/30 text-amber-700 dark:text-amber-300 font-bold'
+                                      : d.isSunday
+                                        ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-bold'
+                                        : ''
+                                    }`}
+                                >
+                                  {val > 0 ? val.toFixed(1) : ''}
+                                </td>
+                              );
+                            })}
+
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
+                              {otSum.toFixed(1)}
+                            </td>
+                          </tr>
+
+                          {/* CN 200% Row */}
+                          <tr className="h-[22px] border-b-2 border-slate-400 dark:border-slate-700 hover:bg-red-50/30 dark:hover:bg-slate-700/30">
+                            <td className="h-[22px] py-[2px] px-1 font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
+                              CN
+                            </td>
+
+                            {monthDays.map((d) => {
+                              const val = getDayVal(emp.id, d.dateStr, 'sunday');
+                              return (
+                                <td
+                                  key={d.dateStr}
+                                  className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${d.isHoliday
+                                      ? 'bg-red-100/80 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
+                                      : d.isSunday
+                                        ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
+                                        : ''
+                                    }`}
+                                >
+                                  {val > 0 ? val.toFixed(1) : ''}
+                                </td>
+                              );
+                            })}
+
+                            <td className="h-[22px] py-[2px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800 border-b-2 border-slate-400 dark:border-slate-700">
+                              {sunSum.toFixed(1)}
+                            </td>
+                          </tr>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* ── Ma trận ngày HC/OT theo nhân viên ── */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden w-full">
-          <div ref={matrixScrollRef} className="overflow-x-auto max-h-[70vh] overflow-y-auto scroll-smooth w-full">
-            <table className="border-collapse text-left text-xs w-full min-w-full">
-              <thead className="sticky top-0 z-20 text-xs shadow-sm">
-                {/* Dòng 1: M/D (8/1, 8/2, ...) theo định dạng tham chiếu ảnh 1 */}
-                <tr className="bg-[#122842] text-white">
-                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-0 bg-[#122842] z-30 w-20 align-middle uppercase text-[12.5px] font-bold">
-                    Mã NV
-                  </th>
-                  <th rowSpan={2} className="py-1 px-2 border-r border-b-2 border-slate-700/60 sticky left-20 bg-[#122842] z-30 w-[180px] max-w-[180px] align-middle uppercase text-[12.5px] font-bold">
-                    Họ Tên
-                  </th>
-                  {/* Freeze pane boundary — bỏ chữ Loại giờ theo yêu cầu (gạch đỏ) */}
-                  <th rowSpan={2} className="py-1 px-2 border-r-2 border-b-2 border-slate-500 sticky left-[260px] bg-[#1e3a5f] z-30 w-16 align-middle uppercase text-[12.5px] font-bold shadow-[4px_0_8px_-3px_rgba(0,0,0,0.45)] whitespace-nowrap">
-                    &nbsp;
-                  </th>
-
-                  {/* Cột các ngày trong tháng: Ngày Lễ → đỏ đậm, Chủ Nhật → hồng, ngày thường → xanh lá */}
-                  {monthDays.map((d) => (
-                    <th
-                      key={`date-${d.dateStr}`}
-                      title={d.isHoliday ? d.holidayName : undefined}
-                      className={`min-w-[34px] px-0.5 py-0.5 text-center font-bold text-[12px] border-r border-b border-dashed border-slate-400/80 leading-tight ${
-                        d.isHoliday
-                          ? 'bg-red-600 text-white dark:bg-red-700 dark:text-white'
-                          : d.isSunday
-                          ? 'bg-[#ffcdd2] text-[#991b1b] dark:bg-[#7f1d1d] dark:text-[#fecaca]'
-                          : 'bg-[#c8e6c9] text-[#134e4a] dark:bg-[#064e3b] dark:text-[#a7f3d0]'
-                      }`}
-                    >
-                      {selectedMonth}/{d.day}
-                    </th>
-                  ))}
-
-                  <th rowSpan={2} className="py-1 px-1 text-center w-14 bg-amber-600 text-white sticky right-0 z-30 align-middle uppercase text-[12.5px] font-bold">
-                    Tổng
-                  </th>
-                </tr>
-
-                {/* Dòng 2: Thứ trong tuần (Sat, Sun, Mon, Tue, Wed, Thu, Fri...) theo định dạng tham chiếu ảnh 1 */}
-                <tr>
-                  {monthDays.map((d) => (
-                    <th
-                      key={`dayname-${d.dateStr}`}
-                      className={`min-w-[34px] px-0.5 py-0 text-center font-bold text-[11px] border-r border-b-2 border-dashed border-slate-400/80 border-b-slate-400 dark:border-b-slate-600 leading-tight ${
-                        d.isHoliday
-                          ? 'bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 font-black'
-                          : d.isSunday
-                          ? 'bg-[#e2e8f0] dark:bg-slate-700 text-red-600 dark:text-red-400'
-                          : 'bg-[#e2e8f0] dark:bg-slate-700 text-slate-800 dark:text-slate-200'
-                      }`}
-                    >
-                      {d.dayName}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-300 dark:divide-slate-700 text-slate-800 dark:text-slate-200 font-medium">
-                {filteredEmps.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
-                      Không tìm thấy nhân viên phù hợp.
-                    </td>
-                  </tr>
-                ) : filteredEmps.map((emp) => {
-                  let hcSum = 0;
-                  let otSum = 0;
-                  let sunSum = 0;
-                  monthDays.forEach((d) => {
-                    hcSum += getDayVal(emp.id, d.dateStr, 'hc');
-                    otSum += getDayVal(emp.id, d.dateStr, 'ot');
-                    sunSum += getDayVal(emp.id, d.dateStr, 'sunday');
-                  });
-
-                  return (
-                    <React.Fragment key={emp.id}>
-                      {/* HC Row */}
-                      <tr className="h-[22px] hover:bg-blue-50/30 dark:hover:bg-slate-700/30">
-                        <td rowSpan={3} className="py-1 px-2 font-semibold text-blue-900 dark:text-blue-300 sticky left-0 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight text-[12.5px]">
-                          {emp.id}
-                        </td>
-                        <td rowSpan={3} className="py-1 px-2 font-bold text-slate-900 dark:text-slate-100 sticky left-20 bg-white dark:bg-slate-800 z-10 border-r border-b-2 border-slate-400 dark:border-slate-700 align-middle leading-tight w-[180px] max-w-[180px] whitespace-nowrap overflow-hidden text-[12.5px]">
-                          {emp.fullName}
-                        </td>
-                        <td className="h-[22px] py-[2px] px-1 font-bold bg-blue-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap leading-tight">
-                          <span className="text-[11.5px] text-black dark:text-white font-bold">HC</span> <span className="text-[10.5px] font-normal text-black dark:text-slate-300">(Công)</span>
-                        </td>
-
-                        {monthDays.map((d) => {
-                          const val = getDayVal(emp.id, d.dateStr, 'hc');
-                          const cong = val / 8; // Quy đổi HC sang đơn vị Công (8h = 1 công)
-                          return (
-                            <td
-                              key={d.dateStr}
-                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isHoliday
-                                  ? 'bg-red-100/80 dark:bg-red-950/30 text-red-700 dark:text-red-300 font-bold'
-                                  : d.isSunday
-                                  ? 'bg-red-50/60 dark:bg-red-950/20 text-red-700 dark:text-red-300 font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {val > 0 ? cong.toFixed(1) : ''}
-                            </td>
-                          );
-                        })}
-
-                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-blue-700 dark:text-blue-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
-                          {(hcSum / 8).toFixed(1)}
-                        </td>
-                      </tr>
-
-                      {/* OT 150% Row */}
-                      <tr className="h-[22px] hover:bg-amber-50/30 dark:hover:bg-slate-700/30">
-                        <td className="h-[22px] py-[2px] px-1 font-bold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
-                          OT
-                        </td>
-
-                        {monthDays.map((d) => {
-                          const val = getDayVal(emp.id, d.dateStr, 'ot');
-                          return (
-                            <td
-                              key={d.dateStr}
-                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isHoliday
-                                  ? 'bg-red-100/80 dark:bg-red-950/30 text-amber-700 dark:text-amber-300 font-bold'
-                                  : d.isSunday
-                                  ? 'bg-red-50/60 dark:bg-red-950/20 text-amber-700 dark:text-amber-300 font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {val > 0 ? val.toFixed(1) : ''}
-                            </td>
-                          );
-                        })}
-
-                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800">
-                          {otSum.toFixed(1)}
-                        </td>
-                      </tr>
-
-                      {/* CN 200% Row */}
-                      <tr className="h-[22px] border-b-2 border-slate-400 dark:border-slate-700 hover:bg-red-50/30 dark:hover:bg-slate-700/30">
-                        <td className="h-[22px] py-[2px] px-1 font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-slate-800 sticky left-[260px] z-10 border-r-2 border-slate-300 dark:border-slate-600 text-center shadow-[4px_0_8px_-3px_rgba(0,0,0,0.15)] dark:shadow-[4px_0_8px_-3px_rgba(0,0,0,0.5)] whitespace-nowrap text-[11.5px] leading-tight">
-                          CN
-                        </td>
-
-                        {monthDays.map((d) => {
-                          const val = getDayVal(emp.id, d.dateStr, 'sunday');
-                          return (
-                            <td
-                              key={d.dateStr}
-                              className={`h-[22px] py-[2px] px-0.5 text-center border-r border-dashed border-slate-300 dark:border-slate-700 text-[12px] font-semibold leading-tight ${
-                                d.isHoliday
-                                  ? 'bg-red-100/80 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
-                                  : d.isSunday
-                                  ? 'bg-red-100/70 dark:bg-red-950/40 text-red-700 dark:text-red-300 font-bold'
-                                  : ''
-                              }`}
-                            >
-                              {val > 0 ? val.toFixed(1) : ''}
-                            </td>
-                          );
-                        })}
-
-                        <td className="h-[22px] py-[2px] px-1 text-center font-bold text-red-700 dark:text-red-300 bg-amber-50 dark:bg-amber-950/40 sticky right-0 z-10 text-[12px] leading-tight border-l border-amber-200 dark:border-amber-800 border-b-2 border-slate-400 dark:border-slate-700">
-                          {sunSum.toFixed(1)}
-                        </td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        </div>
       )}
-    </div>
-  );
+        </div>
+      );
 };
